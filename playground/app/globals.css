@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "../node_modules/highlight.js/styles/stackoverflow-light.css";
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
