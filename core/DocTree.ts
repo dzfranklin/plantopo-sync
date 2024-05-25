@@ -1,10 +1,12 @@
 import { Changeset } from "./Changeset.ts";
 import compareStrings from "./compareStrings.ts";
 
-export type DocTree = DocNode & {
+export type DocTree = {
   id: "root";
-  idx: "";
   parent: null;
+  idx: "";
+  props: DocNode["props"];
+  children: DocNode["children"];
   nodes: Record<string, DocNode>;
 };
 

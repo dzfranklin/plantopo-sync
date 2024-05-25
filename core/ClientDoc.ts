@@ -22,10 +22,12 @@ const backoffRate = 2;
 const backoffMaxMs = 5 * 60 * 1000; // 5 minutes
 
 export interface ClientDocStatus {
+  loaded: boolean;
   unsyncedChanges: number;
 }
 
 const initialClientDocStatus: ClientDocStatus = {
+  loaded: false,
   unsyncedChanges: 0,
 };
 
@@ -360,6 +362,7 @@ export class ClientDoc {
     }
 
     const status: ClientDocStatus = {
+      loaded: this._initialTransportLoaded || this._persistenceLoaded,
       unsyncedChanges: this._changes.size(),
     };
     if (!clientDocStatusEqual(this._status, status)) {
