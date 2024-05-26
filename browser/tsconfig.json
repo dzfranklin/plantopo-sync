@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "esnext"
+    ],
+    "target": "ESNext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+  },
+  "exclude": [
+    "*.spec.ts"
+  ]
+}

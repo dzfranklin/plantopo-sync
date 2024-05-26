@@ -82,7 +82,6 @@ export default function Playground() {
           <ClientPlayground
             circuit="A"
             doc={actors.clientA}
-            persistence={actors.aPersistence}
             network={actors.network}
           />
         )}
@@ -92,7 +91,6 @@ export default function Playground() {
           <ClientPlayground
             circuit="B"
             doc={actors.clientB}
-            persistence={actors.bPersistence}
             network={actors.network}
           />
         )}

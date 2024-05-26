@@ -21,6 +21,9 @@ const backoffIntervalMs = 50;
 const backoffRate = 2;
 const backoffMaxMs = 5 * 60 * 1000; // 5 minutes
 
+// TODO: Handle errors that need to be recovered at a higher level like invalid
+// token
+
 export interface ClientDocStatus {
   loaded: boolean;
   unsyncedChanges: number;
@@ -88,7 +91,12 @@ export class ClientDoc {
   }) {
     this.clientId = config.clientId;
     this.docId = config.docId;
-    this._l = config.logger || new ConsoleLogger();
+
+    this._l = (config.logger || new ConsoleLogger()).child({
+      doc: this.docId,
+      client: this.clientId,
+    });
+
     this._rng = config.rng ?? new CoreRng();
     this._persistence = config.persistence;
 
@@ -143,6 +151,10 @@ export class ClientDoc {
 
   connect() {
     this._connect();
+  }
+
+  persistence(): ClientDocPersistence {
+    return this._persistence;
   }
 
   onStatusChange(cb: (status: ClientDocStatus) => void): () => void {
@@ -321,9 +333,10 @@ export class ClientDoc {
 
     this._peers = [];
     for (const client of msg.clients) {
-      if (client.id !== this.clientId) {
-        this._peers.push(client);
-      }
+      // TODO: These are different kinds of ids now.
+      // if (client.id !== this.clientId) {
+      this._peers.push(client);
+      // }
     }
 
     this._update();

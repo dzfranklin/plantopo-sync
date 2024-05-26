@@ -1,7 +1,7 @@
 import { Changeset } from "./Changeset.ts";
 import { UserInfo } from "./UserInfo.ts";
 
-export type Msg = UpdateMsg | ServerUpdateMsg;
+export type Msg = AuthMsg | AuthResultMsg | UpdateMsg | ServerUpdateMsg;
 
 export interface UpdateMsg {
   type: "update";
@@ -16,6 +16,19 @@ export interface ServerUpdateMsg {
   replyTo?: number;
   clients: Readonly<ClientInfo[]>;
   changeset?: Readonly<Changeset>;
+}
+
+export interface AuthMsg {
+  type: "auth";
+  token: string;
+}
+
+export interface AuthResultMsg {
+  type: "authResult";
+  success: boolean;
+  issue?: "invalidToken" | "permissionDenied";
+  /** Only present if success */
+  user?: UserInfo;
 }
 
 export interface ClientInfo {

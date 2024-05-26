@@ -11,27 +11,31 @@ import { CircuitStatus, PlaygroundNetwork } from "@/lib/PlaygroundNetwork";
 export default function ClientPlayground({
   circuit,
   doc,
-  persistence,
   network,
 }: {
-  circuit: string;
   doc: ClientDoc;
-  persistence: PlaygroundClientDocPersistence;
-  network: PlaygroundNetwork;
+  circuit?: string;
+  network?: PlaygroundNetwork;
 }) {
+  const persistence = doc.persistence();
+
   return (
     <PlaygroundShell
       header={
         <>
           <h2 className="mr-auto font-medium">{doc.clientId}</h2>
-          <CircuitControls network={network} circuit={circuit} />
+          {circuit && network && (
+            <CircuitControls network={network} circuit={circuit} />
+          )}
         </>
       }
     >
       <div className="flex flex-col gap-1 mb-1">
         <PeersInfo doc={doc} />
         <AwareEdit doc={doc} />
-        <PersistenceInfo persistence={persistence} />
+        {persistence instanceof PlaygroundClientDocPersistence && (
+          <PersistenceInfo persistence={persistence} />
+        )}
         <StatusInfo doc={doc} />
       </div>
       <DocPlayground doc={doc} />
