@@ -1,4 +1,4 @@
-import { assertEquals } from "std/testing/asserts.ts";
+import { assertEquals } from "std/assert/assert_equals.ts";
 import { WorkingChangeset, Changeset } from "./Changeset.ts";
 import { NoopLogger, ConsoleLogger } from "./Logger.ts";
 import { fracIdxBetween } from "./fracIdx.ts";
@@ -16,70 +16,69 @@ const zeroRng = {
 
 const onlyExplicitMode = false;
 
-async function doTest(
-  t: any,
-  config: {
+const createTest =
+  (config: {
     base: Partial<Changeset>;
     change: Partial<Changeset> | Partial<Changeset>[];
     expected: Partial<Changeset>;
     authoritativeOnly?: boolean;
     nonAuthoritativeOnly?: boolean;
     only?: boolean;
-  }
-) {
-  if (onlyExplicitMode && !config.only) {
-    return;
-  }
-
-  const makeSubject = () =>
-    new WorkingChangeset(
-      config.base,
-      onlyExplicitMode ? new ConsoleLogger() : new NoopLogger(),
-      zeroRng
-    );
-
-  const base = changeset(config.base);
-  const changes = Array.isArray(config.change)
-    ? config.change.map(changeset)
-    : [changeset(config.change)];
-  const expected = changeset(config.expected);
-
-  if (config.authoritativeOnly) {
-    const subject = makeSubject();
-    for (const change of changes) {
-      subject.changeAuthoritative(change);
+  }) =>
+  async (t: Deno.TestContext) => {
+    if (onlyExplicitMode && !config.only) {
+      return;
     }
-    const got = subject.collect();
-    assertEquals(got, expected);
-  } else if (config.nonAuthoritativeOnly) {
-    const subject = makeSubject();
-    for (const change of changes) {
-      subject.change(change);
-    }
-    const got = subject.collect();
-    assertEquals(got, expected);
-  } else {
-    await t.step("non-authoritative", () => {
-      const subject = makeSubject();
-      for (const change of changes) {
-        subject.change(change);
-      }
-      const got = subject.collect();
-      assertEquals(got, expected);
-    });
-    await t.step("authoritative", () => {
+
+    const makeSubject = () =>
+      new WorkingChangeset(
+        changeset(config.base),
+        onlyExplicitMode ? new ConsoleLogger() : new NoopLogger(),
+        zeroRng
+      );
+
+    const changes = Array.isArray(config.change)
+      ? config.change.map(changeset)
+      : [changeset(config.change)];
+    const expected = changeset(config.expected);
+
+    if (config.authoritativeOnly) {
       const subject = makeSubject();
       for (const change of changes) {
         subject.changeAuthoritative(change);
       }
       const got = subject.collect();
       assertEquals(got, expected);
-    });
-  }
-}
+    } else if (config.nonAuthoritativeOnly) {
+      const subject = makeSubject();
+      for (const change of changes) {
+        subject.change(change);
+      }
+      const got = subject.collect();
+      assertEquals(got, expected);
+    } else {
+      await t.step("non-authoritative", () => {
+        const subject = makeSubject();
+        for (const change of changes) {
+          subject.change(change);
+        }
+        const got = subject.collect();
+        assertEquals(got, expected);
+      });
+      await t.step("authoritative", () => {
+        const subject = makeSubject();
+        for (const change of changes) {
+          subject.changeAuthoritative(change);
+        }
+        const got = subject.collect();
+        assertEquals(got, expected);
+      });
+    }
+  };
 
-Deno.test("rejects direct cycle", (t) =>
-  doTest(t, {
+Deno.test(
+  "rejects direct cycle",
+  createTest({
     authoritativeOnly: true,
     base: {
       create: ["N1", "N2"],
@@ -112,8 +111,9 @@ Deno.test("rejects direct cycle", (t) =>
   })
 );
 
-Deno.test("rejects indirect cycle", async (t) =>
-  doTest(t, {
+Deno.test(
+  "rejects indirect cycle",
+  createTest({
     authoritativeOnly: true,
     base: {
       create: ["N1", "N2", "N3"],
@@ -175,8 +175,9 @@ Deno.test("rejects indirect cycle", async (t) =>
   })
 );
 
-Deno.test("fixes colliding idx with no after", async (t) =>
-  doTest(t, {
+Deno.test(
+  "fixes colliding idx with no after",
+  createTest({
     authoritativeOnly: true,
     base: {
       create: ["N1", "N2"],
@@ -198,8 +199,9 @@ Deno.test("fixes colliding idx with no after", async (t) =>
   })
 );
 
-Deno.test("fixes colliding idx with after", async (t) =>
-  doTest(t, {
+Deno.test(
+  "fixes colliding idx with after",
+  createTest({
     authoritativeOnly: true,
     base: {
       create: ["N1", "N2", "N3"],
@@ -234,8 +236,9 @@ Deno.test("position changes applied in order", async (t) => {
     ],
   };
 
-  await t.step("if the changes conflict", (t) =>
-    doTest(t, {
+  await t.step(
+    "if the changes conflict",
+    createTest({
       authoritativeOnly: true,
       base,
       change: {
@@ -255,8 +258,9 @@ Deno.test("position changes applied in order", async (t) => {
     })
   );
 
-  await t.step("if the changes do not conflict", (t) =>
-    doTest(t, {
+  await t.step(
+    "if the changes do not conflict",
+    createTest({
       authoritativeOnly: true,
       base,
       change: {
@@ -279,8 +283,9 @@ Deno.test("position changes applied in order", async (t) => {
   );
 });
 
-Deno.test("deletes recursively", async (t) =>
-  doTest(t, {
+Deno.test(
+  "deletes recursively",
+  createTest({
     base: {
       create: ["N1", "N2", "N3"],
       position: [
@@ -298,8 +303,9 @@ Deno.test("deletes recursively", async (t) =>
   })
 );
 
-Deno.test("rejects authoritative move to non-existent parent", async (t) =>
-  doTest(t, {
+Deno.test(
+  "rejects authoritative move to non-existent parent",
+  createTest({
     authoritativeOnly: true,
     base: {
       create: ["N1"],
@@ -317,25 +323,26 @@ Deno.test("rejects authoritative move to non-existent parent", async (t) =>
 
 Deno.test(
   "does not reject non-authoritative move to non-existent parent",
-  async (t) =>
-    doTest(t, {
-      nonAuthoritativeOnly: true,
-      base: {
-        create: ["N1"],
-        position: [["N1", "root", "A"]],
-      },
-      change: {
-        position: [["N1", "non-existent", "A"]],
-      },
-      expected: {
-        create: ["N1"],
-        position: [["N1", "non-existent", "A"]],
-      },
-    })
+
+  createTest({
+    nonAuthoritativeOnly: true,
+    base: {
+      create: ["N1"],
+      position: [["N1", "root", "A"]],
+    },
+    change: {
+      position: [["N1", "non-existent", "A"]],
+    },
+    expected: {
+      create: ["N1"],
+      position: [["N1", "non-existent", "A"]],
+    },
+  })
 );
 
-Deno.test("rejects create without position", async (t) =>
-  doTest(t, {
+Deno.test(
+  "rejects create without position",
+  createTest({
     base: {},
     change: {
       create: ["N1"],
@@ -344,8 +351,9 @@ Deno.test("rejects create without position", async (t) =>
   })
 );
 
-Deno.test("rejects authoritative create with non-existent parent", async (t) =>
-  doTest(t, {
+Deno.test(
+  "rejects authoritative create with non-existent parent",
+  createTest({
     authoritativeOnly: true,
     base: {},
     change: {
@@ -358,17 +366,17 @@ Deno.test("rejects authoritative create with non-existent parent", async (t) =>
 
 Deno.test(
   "does not reject non-authoritative create with non-existent parent",
-  async (t) =>
-    doTest(t, {
-      nonAuthoritativeOnly: true,
-      base: {},
-      change: {
-        create: ["N1"],
-        position: [["N1", "non-existent", "A"]],
-      },
-      expected: {
-        create: ["N1"],
-        position: [["N1", "non-existent", "A"]],
-      },
-    })
+
+  createTest({
+    nonAuthoritativeOnly: true,
+    base: {},
+    change: {
+      create: ["N1"],
+      position: [["N1", "non-existent", "A"]],
+    },
+    expected: {
+      create: ["N1"],
+      position: [["N1", "non-existent", "A"]],
+    },
+  })
 );

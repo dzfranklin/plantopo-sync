@@ -108,7 +108,7 @@ function NodeComponent({
             <Button
               small
               onClick={() => {
-                doc.add(node.id, { type: "firstChild", parent: node.id });
+                doc.add({ type: "firstChild", parent: node.id });
               }}
             >
               Child

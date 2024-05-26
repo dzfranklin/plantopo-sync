@@ -1,8 +1,6 @@
-import { assertEquals } from "std/testing/asserts.ts";
-import { Changeset } from "./Changeset.ts";
+import { assertEquals } from "std/assert/assert_equals.ts";
 import { ServerDoc } from "./ServerDoc.ts";
 import { InMemoryServerDocPersistence } from "./DocPersistence.ts";
-import { UpdateMsg } from "./Msg.ts";
 
 Deno.test("load ServerDoc", async () => {
   const doc = await ServerDoc.load(

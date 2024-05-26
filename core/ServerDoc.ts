@@ -7,7 +7,7 @@ import {
 } from "./Changeset.ts";
 import { ConsoleLogger, Logger } from "./Logger.ts";
 import { DocTree, DocTreeCollector } from "./DocTree.ts";
-import { UpdateMsg, ServerUpdateMsg, ClientInfo } from "./Msg.ts";
+import { UpdateMsg, ClientInfo } from "./Msg.ts";
 import { Transport } from "./Transport.ts";
 import compareStrings from "./compareStrings.ts";
 import Channel from "./Channel.ts";

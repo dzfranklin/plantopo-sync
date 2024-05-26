@@ -117,14 +117,14 @@ export class WorkingChangeset {
         this._delete.delete(obj);
       }
     }
-    for (const [obj, props] of this._property) {
-      for (const [key, [value, m]] of props) {
+    for (const [_obj, props] of this._property) {
+      for (const [key, [_value, m]] of props) {
         if (m < meta) {
           props.delete(key);
         }
       }
     }
-    for (const [child, [parent, idx, m]] of this._position) {
+    for (const [child, [_parent, _idx, m]] of this._position) {
       if (m < meta) {
         this._position.delete(child);
       }
@@ -278,7 +278,6 @@ export class WorkingChangeset {
   }
 
   private _wouldCycle(child: string, parent: string): boolean {
-    const visited = new Set<string>();
     let cursor = parent;
     while (true) {
       if (cursor === child) {
@@ -291,7 +290,6 @@ export class WorkingChangeset {
       }
       [cursor] = next;
     }
-    return false;
   }
 
   private _maybeResolveConflictingIdx(

@@ -25,7 +25,6 @@ interface WorkingNode {
 
 export class DocTreeCollector {
   private _cache = new Map<string, DocNode | DocTree>();
-  private _cachedRoot: DocTree | null = null;
 
   static empty(): DocTree {
     return new DocTreeCollector().collect({ schema: 0 });
@@ -37,7 +36,7 @@ export class DocTreeCollector {
    * object will be returned. This enables efficient diffing.
    */
   collect(cset: Changeset): DocTree {
-    return collectChangesetToDocTree(this._cache, this._cachedRoot, cset);
+    return collectChangesetToDocTree(this._cache, cset);
   }
 
   static collect(cset: Changeset): DocTree {
@@ -47,7 +46,6 @@ export class DocTreeCollector {
 
 function collectChangesetToDocTree(
   cache: Map<string, DocNode>,
-  cachedRoot: DocTree | null,
   cset: Changeset
 ): DocTree {
   const workingNodes = prepareWorkingNodes(cset);
@@ -104,7 +102,7 @@ function buildNode(
 }
 
 function prepareWorkingNodes(cset: Changeset): Map<string, WorkingNode> {
-  let workingNodes = new Map<string, Partial<WorkingNode>>();
+  const workingNodes = new Map<string, Partial<WorkingNode>>();
 
   for (const id of cset.create || []) {
     workingNodes.set(id, {

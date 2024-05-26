@@ -1,7 +1,7 @@
 import { Logger } from "./Logger.ts";
 import { Transport, TransportConnecter } from "./Transport.ts";
 import { ConsoleLogger } from "./Logger.ts";
-import { DocTree, DocNode, DocTreeCollector } from "./DocTree.ts";
+import { DocTree, DocTreeCollector } from "./DocTree.ts";
 import {
   Changeset,
   WorkingChangeset,
@@ -204,7 +204,7 @@ export class ClientDoc {
     this._change({ property: [[node, key, value]] });
   }
 
-  add(parent: string, position: InsertPosition) {
+  add(position: InsertPosition) {
     this._node++;
     const id = `oid:${this.clientId}:${this._node}`;
     this._change({

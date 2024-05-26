@@ -1,8 +1,8 @@
-import { assertEquals } from "std/testing/asserts.ts";
+import { assertEquals } from "std/assert/assert_equals.ts";
 import { InsertPosition, resolveInsertPosition } from "./InsertPosition.ts";
 import { docTree } from "./DocTree.spec.ts";
 import { ConsoleLogger, Logger, NoopLogger } from "./Logger.ts";
-import { Rng, CoreRng } from "./Rng.ts";
+import { Rng } from "./Rng.ts";
 
 const basicTree = docTree({
   id: "root",

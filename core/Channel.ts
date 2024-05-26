@@ -15,9 +15,9 @@ export default class Channel<T> {
     }
   }
 
-  async recv(): Promise<T> {
+  recv(): Promise<T> {
     if (this._queue.length > 0) {
-      return this._queue.shift()!;
+      return Promise.resolve(this._queue.shift()!);
     } else {
       return new Promise<T>((resolve, reject) => {
         this._waiters.push({ resolve, reject });
@@ -25,9 +25,9 @@ export default class Channel<T> {
     }
   }
 
-  async recvTimeout(timeoutMs: number): Promise<T | undefined> {
+  recvTimeout(timeoutMs: number): Promise<T | undefined> {
     if (this._queue.length > 0) {
-      return this._queue.shift()!;
+      return Promise.resolve(this._queue.shift()!);
     } else {
       return new Promise<T | undefined>((resolve, reject) => {
         const timeout = setTimeout(() => {
