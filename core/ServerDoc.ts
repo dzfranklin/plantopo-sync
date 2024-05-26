@@ -35,8 +35,6 @@ interface RecvEntry {
   msg: UpdateMsg;
 }
 
-class CloseRecvError extends Error {}
-
 export class ServerDoc {
   readonly id: string;
 
