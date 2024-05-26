@@ -2,9 +2,6 @@
   "include": [
     "./server"
   ],
-  "imports": {
-    "std/": "https://deno.land/std@0.224.0/"
-  },
   "lint": {
     "include": [
       "./core",
@@ -20,5 +17,11 @@
     "include": [
       "**/*.spec.ts"
     ]
+  },
+  "imports": {
+    "std/": "https://deno.land/std@0.224.0/",
+    "ulid/": "https://deno.land/x/ulid@v0.3.0/",
+    "prom-client/": "npm:prom-client@15.1/",
+    "zod/": "https://deno.land/x/zod@v3.23.8/"
   }
 }

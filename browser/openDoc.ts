@@ -33,7 +33,7 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
   const logger = config.logger || new ConsoleLogger();
   return async (docId) => {
     const l = logger.child({ docId });
-    const inner = new WebSocket(config.endpoint + "?docId=" + docId);
+    const inner = new WebSocket(config.endpoint + "/doc?docId=" + docId);
 
     let transport: Transport;
     try {

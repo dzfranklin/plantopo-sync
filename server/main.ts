@@ -1,7 +1,7 @@
 import * as log from "./log.ts";
 import { ConsoleHandler } from "std/log/mod.ts";
 import { DocManager } from "./DocManager.ts";
-import { handler } from "./handler.ts";
+import mux, { HandlerConfig } from "./handlers/mux.ts";
 import * as dotenv from "std/dotenv/mod.ts";
 import { TestAllowAllAuthorizer } from "./Authorizer.ts";
 import { TestAlwaysBobAuthenticator } from "./Authenticator.ts";
@@ -10,6 +10,12 @@ import { DocDB } from "./DocDB.ts";
 
 await dotenv.load({ export: true });
 const env = Deno.env.toObject();
+
+function mustEnv(name: string): string {
+  const value = env[name];
+  if (!value) throw new Error(`missing env var: ${name}`);
+  return value;
+}
 
 const args = parseArgs(Deno.args);
 
@@ -43,23 +49,17 @@ log.info("Starting", { args, hostname, port, docPath });
 const docDB = await DocDB.open({ path: docPath });
 
 const docManager = new DocManager({
-  doc: {
-    persistence: docDB,
-    logger: log.Logger,
-  },
+  persistence: docDB,
+  logger: log.Logger,
 });
 
 const authorizer = TestAllowAllAuthorizer; // TODO: implement
 const authenticator = TestAlwaysBobAuthenticator; // TODO: implement
 
+const muxConfig: HandlerConfig = {
+  doc: { authenticator, authorizer, docManager },
+};
+
 // Serve
 
-Deno.serve({ hostname, port }, handler(authenticator, authorizer, docManager));
-
-function mustEnv(name: string): string {
-  const value = env[name];
-  if (!value) {
-    throw new Error(`missing env var: ${name}`);
-  }
-  return value;
-}
+Deno.serve({ hostname, port }, mux(muxConfig));

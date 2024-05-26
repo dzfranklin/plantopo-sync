@@ -3,7 +3,7 @@ import { WorkingChangeset, Changeset } from "./Changeset.ts";
 import { NoopLogger, ConsoleLogger } from "./Logger.ts";
 import { fracIdxBetween } from "./fracIdx.ts";
 
-export function changeset(cset: Partial<Changeset>): Changeset {
+export function changeset(cset?: Partial<Changeset>): Changeset {
   return {
     schema: 0,
     ...cset,

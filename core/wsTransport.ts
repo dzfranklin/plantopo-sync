@@ -29,7 +29,13 @@ export function wsTransport(
       });
 
       resolve({
-        send: (msg) => socket.send(JSON.stringify(msg)),
+        send: (msg) => {
+          if (socket.readyState !== WebSocket.OPEN) {
+            logger.warn("WebSocket not open, dropping message", { msg });
+            return;
+          }
+          socket.send(JSON.stringify(msg));
+        },
         recv: () => inbound.recv(),
         close: () => socket.close(),
       });

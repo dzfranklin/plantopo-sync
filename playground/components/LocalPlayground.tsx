@@ -19,7 +19,7 @@ export default function LocalPlayground() {
   } | null>(null);
   useEffect(() => {
     const config: OpenDocConfig = {
-      endpoint: "ws://localhost:4032/v1/ws",
+      endpoint: "ws://localhost:4032/v1",
       token: "local-playground",
       logger: logs.logger("doc"),
     };
