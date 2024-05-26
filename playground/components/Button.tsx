@@ -6,16 +6,18 @@ export default function Button({
   disabled,
   small,
   primary,
+  type,
 }: {
   children?: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   small?: boolean;
   primary?: boolean;
+  type?: "submit" | "reset" | "button";
 }) {
   return (
     <button
-      type="button"
+      type={type}
       className={cls(
         "rounded py-1 shadow-sm ring-1 ring-inset disabled:opacity-50 disabled:cursor-not-allowed",
         small ? "px-1.5 text-xs" : "px-2 text-sm font-semibold",
