@@ -5,16 +5,16 @@ class DenoLogger implements ILogger {
   constructor(private readonly props: Record<string, unknown>) {}
 
   debug(msg: string, props?: Record<string, unknown>): void {
-    debug(msg, props);
+    debug(msg, { ...this.props, ...props });
   }
   info(msg: string, props?: Record<string, unknown>): void {
-    info(msg, props);
+    info(msg, { ...this.props, ...props });
   }
   warn(msg: string, props?: Record<string, unknown>): void {
-    warn(msg, props);
+    warn(msg, { ...this.props, ...props });
   }
   error(msg: string, props?: Record<string, unknown>): void {
-    error(msg, props);
+    error(msg, { ...this.props, ...props });
   }
   child(props: Record<string, unknown>): ILogger {
     return new DenoLogger({ ...this.props, ...props });
