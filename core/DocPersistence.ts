@@ -1,8 +1,8 @@
-import { Changeset, combineChangesets } from "./Changeset.ts";
+import { Changeset } from "./Changeset.ts";
 
 export interface ServerDocPersistence {
   load(doc: string): Promise<Changeset | null>;
-  push(doc: string, changeset: Changeset): Promise<void>;
+  save(doc: string, changeset: Changeset): Promise<void>;
 }
 
 export interface ClientDocSave {
@@ -16,26 +16,22 @@ export interface ClientDocPersistence {
 }
 
 export class InMemoryServerDocPersistence implements ServerDocPersistence {
-  private _d: Record<string, Changeset[]> = {};
+  private _d = new Map<string, Changeset>();
 
   constructor(docs: Record<string, Changeset> = {}) {
     for (const doc in docs) {
-      this._d[doc] = [docs[doc]];
+      this._d.set(doc, docs[doc]);
     }
   }
 
   async load(doc: string): Promise<Changeset | null> {
     await waitTick();
-    const changesets = this._d[doc];
-    if (!changesets) {
-      return null;
-    }
-    return changesets.reduce(combineChangesets);
+    return this._d.get(doc) ?? null;
   }
 
-  async push(doc: string, changeset: Changeset): Promise<void> {
+  async save(doc: string, value: Changeset): Promise<void> {
     await waitTick();
-    this._d[doc] = [...(this._d[doc] || []), changeset];
+    this._d.set(doc, value);
   }
 }
 

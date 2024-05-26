@@ -185,7 +185,8 @@ export class ServerDoc {
 
       // persist
       if (updates) {
-        await this._p.push(this.id, updates);
+        const value = this._data.collect();
+        await this._p.save(this.id, value);
       }
 
       const clients = this.clients();
