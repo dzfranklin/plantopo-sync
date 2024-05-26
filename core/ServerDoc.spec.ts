@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals } from "std/testing/asserts.ts";
 import { Changeset } from "./Changeset.ts";
 import { ServerDoc } from "./ServerDoc.ts";
 import { InMemoryServerDocPersistence } from "./DocPersistence.ts";

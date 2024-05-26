@@ -5,7 +5,7 @@ export interface Authorizer {
 }
 
 export const TestAllowAllAuthorizer: Authorizer = {
-  async check(docId: string, userId: string): Promise<AuthorizationType> {
-    return "write";
+  check(_docId: string, _userId: string): Promise<AuthorizationType> {
+    return Promise.resolve("write");
   },
 };

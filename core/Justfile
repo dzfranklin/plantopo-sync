@@ -1,6 +1,0 @@
-test:
-  tsc --build tsconfig.json
-  deno test --allow-all **/*.spec.ts
-
-test-watch:
-  deno test --allow-all --watch **/*.spec.ts

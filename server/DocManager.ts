@@ -1,5 +1,3 @@
-import { Authenticator } from "./Authenticator.ts";
-import { Authorizer } from "./Authorizer.ts";
 import * as log from "./log.ts";
 import { ServerDoc, ServerDocConfig } from "../core/ServerDoc.ts";
 

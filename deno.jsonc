@@ -1,0 +1,23 @@
+{
+  "include": [
+    "./server"
+  ],
+  "imports": {
+    "std/": "https://deno.land/std@0.224.0/"
+  },
+  "lint": {
+    "include": [
+      "./server"
+    ],
+    "rules": {
+      "tags": [
+        "recommended"
+      ]
+    }
+  },
+  "test": {
+    "include": [
+      "**/*.spec.ts"
+    ]
+  }
+}

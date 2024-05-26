@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals } from "std/testing/asserts.ts";
 import { WorkingChangeset, Changeset } from "./Changeset.ts";
 import { NoopLogger, ConsoleLogger } from "./Logger.ts";
 import { fracIdxBetween } from "./fracIdx.ts";

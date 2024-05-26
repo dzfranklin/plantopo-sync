@@ -1,4 +1,4 @@
-import { Channel, Transport, Msg, wsTransport } from "../core/index.ts";
+import { Transport, Msg, wsTransport } from "../core/index.ts";
 import * as log from "./log.ts";
 
 export async function upgradeWS(req: Request): Promise<{

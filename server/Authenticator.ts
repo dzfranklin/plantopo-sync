@@ -5,11 +5,11 @@ export interface Authenticator {
 }
 
 export const TestAlwaysBobAuthenticator: Authenticator = {
-  async authenticate(token) {
-    return {
+  authenticate(_token) {
+    return Promise.resolve({
       id: "bob",
       name: "Bob",
       isAnonymous: false,
-    };
+    });
   },
 };

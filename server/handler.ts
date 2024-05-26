@@ -2,8 +2,7 @@ import { DocManager } from "./DocManager.ts";
 import * as log from "./log.ts";
 import { Authenticator } from "./Authenticator.ts";
 import { Authorizer } from "./Authorizer.ts";
-import { upgradeWS as upgradeWS } from "./wsChannel.ts";
-import { Msg, Transport } from "../core/index.ts";
+import { upgradeWS } from "./wsChannel.ts";
 
 export function handler(
   authenticator: Authenticator,

@@ -1,6 +1,6 @@
 import { Changeset } from "./Changeset.ts";
 import { DocTreeCollector, DocTree, DocNode } from "./DocTree.ts";
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals } from "std/testing/asserts.ts";
 import { changeset } from "./Changeset.spec.ts";
 
 export function docTree(tree: Omit<DocTree, "nodes">): DocTree {

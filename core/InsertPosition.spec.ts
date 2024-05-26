@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals } from "std/testing/asserts.ts";
 import { InsertPosition, resolveInsertPosition } from "./InsertPosition.ts";
 import { docTree } from "./DocTree.spec.ts";
 import { ConsoleLogger, Logger, NoopLogger } from "./Logger.ts";
