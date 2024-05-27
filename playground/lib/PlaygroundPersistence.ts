@@ -6,6 +6,7 @@ import {
   ClientDocSave,
 } from "@/core";
 import { waitFor } from "./waitFor";
+import { emptyChangeset } from "../../core/Changeset";
 
 export class PlaygroundServerDocPersistence implements ServerDocPersistence {
   private _d: Record<string, Changeset[]> = {};
@@ -21,14 +22,10 @@ export class PlaygroundServerDocPersistence implements ServerDocPersistence {
 
   async load(doc: string): Promise<Changeset> {
     await waitFor(this.latencyMs);
-    const changesets = this._d[doc];
-    if (!changesets) {
-      return { schema: 0 };
-    }
-    return changesets.reduce(combineChangesets);
+    return this._d[doc]?.at(-1) ?? emptyChangeset();
   }
 
-  async push(doc: string, changeset: Changeset): Promise<void> {
+  async save(doc: string, changeset: Changeset): Promise<void> {
     await waitFor(this.latencyMs);
     this._d[doc] = [...(this._d[doc] || []), changeset];
     this._onChange.get(doc)?.forEach((cb) => cb(this._d[doc]!));

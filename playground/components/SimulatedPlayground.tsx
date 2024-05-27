@@ -152,13 +152,13 @@ async function createActors(prev?: Actors): Promise<Actors> {
     serverPersistence = new PlaygroundServerDocPersistence();
   }
 
-  const server = await ServerDoc.load(
+  const server = (await ServerDoc.load(
     {
       persistence: serverPersistence,
       logger: logs.logger("ServerDoc"),
     },
     "doc1"
-  );
+  ))!;
 
   const network = new PlaygroundNetwork(server, logs);
   if (prev) {

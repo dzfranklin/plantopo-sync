@@ -76,6 +76,20 @@ export class PlaygroundNetwork {
             });
             return message;
           },
+          recvTimeout: async (timeoutMs) => {
+            const start = Date.now();
+            await this._latencyDelay();
+            if (Date.now() - start > timeoutMs) return undefined;
+            const message = await c.recvServer();
+            this._l.push({
+              type: "rx",
+              circuit,
+              sender: "client",
+              receiver: "server",
+              message,
+            });
+            return message;
+          },
           close: () => this._disconnectBy(circuit, "server"),
         }
       );
@@ -94,6 +108,21 @@ export class PlaygroundNetwork {
             this._latencyDelay().then(() => c.sendServer(message));
           },
           recv: async () => {
+            await this._latencyDelay();
+            const message = await c.recvClient();
+            this._l.push({
+              type: "rx",
+              circuit,
+              sender: "server",
+              receiver: "client",
+              message,
+            });
+            return message;
+          },
+          recvTimeout: async (timeoutMs) => {
+            const start = Date.now();
+            await this._latencyDelay();
+            if (Date.now() - start > timeoutMs) return undefined;
             await this._latencyDelay();
             const message = await c.recvClient();
             this._l.push({
