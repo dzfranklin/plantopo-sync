@@ -38,3 +38,6 @@ live-playground:
   trap "kill $serverPid $playgroundPid $promPid && reset" INT TERM
   sleep 1 && open -a "Google Chrome" "http://localhost:9090" "http://localhost:3000/local"
   wait $serverPid $playgroundPid $promPid
+
+loc:
+  tokei -t=typescript,tsx
