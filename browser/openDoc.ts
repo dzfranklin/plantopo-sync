@@ -80,7 +80,7 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
       return { type: "error" };
     }
 
-    l.info("authenticated", { user: resp.user.id });
+    l.info("authenticated", { user: resp?.user?.id });
 
     return { type: "ready", transport };
   };
