@@ -7,6 +7,8 @@ import {
 } from "../core/index";
 import { Doc, Logger } from "./index";
 
+// TODO: debug expected authResult and instead got serverUpdate around 10% of the time with 10ms latency
+
 export function openDoc(config: OpenDocConfig, docId: string): Doc {
   const clientId =
     "c:" + Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
