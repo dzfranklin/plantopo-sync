@@ -7,6 +7,7 @@ import LogCollector, {
 import { useEffect, useRef, useState } from "react";
 import { JSONComponent } from "./JSONComponent";
 import Button from "./Button";
+import cls from "@/cls";
 
 export default function LogsPlayground({
   collector,
@@ -135,9 +136,18 @@ function MessageComponent({
       }
     >
       <span>{entry.component}</span>
-      <span>{entry.level}</span>
+      <span
+        className={cls(
+          "rounded-full px-2 py-0.5 text-xs",
+          entry.level === "error" && "bg-red-100 text-red-800",
+          entry.level === "warn" && "bg-yellow-100 text-yellow-800",
+          entry.level === "info" && "bg-blue-100 text-blue-800"
+        )}
+      >
+        {entry.level}
+      </span>
       <span className="truncate">{entry.message}</span>
-      <div className="ml-auto truncate shrink">
+      <div className="ml-auto truncate shrink max-w-60">
         {Object.keys(entry.props).length > 0 && (
           <JSONComponent value={entry.props} oneLine />
         )}

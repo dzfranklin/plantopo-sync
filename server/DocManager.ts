@@ -9,17 +9,6 @@ const openGauge = new prom.Gauge({
   help: "Number of open documents",
 });
 
-const loadTimeHistogram = new prom.Histogram({
-  name: "doc_load_time_ms",
-  help: "Time to load a document in milliseconds",
-  buckets: [0, 0.2, 0.4, 0.6, 0.8, 1, 5, 10, 30, 60],
-});
-
-const nonexistentDocCounter = new prom.Counter({
-  name: "doc_nonexistent_total",
-  help: "Total number of requests for nonexistent documents",
-});
-
 export class DocManager {
   private _persistence: ServerDocPersistence;
   private _l: Logger;
@@ -59,16 +48,11 @@ export class DocManager {
     );
     this._loadingDocs.set(docId, loadingDoc);
 
-    const start = performance.now();
     loadingDoc.then((doc) => {
       openGauge.inc();
-      loadTimeHistogram.observe(performance.now() - start);
 
       this._loadingDocs.delete(docId);
-      if (!doc) {
-        nonexistentDocCounter.inc();
-        return;
-      }
+      if (!doc) return;
 
       this._docs.set(docId, doc);
 

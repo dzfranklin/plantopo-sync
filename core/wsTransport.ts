@@ -31,7 +31,9 @@ export function wsTransport(
       resolve({
         send: (msg) => {
           if (socket.readyState !== WebSocket.OPEN) {
-            logger.warn("WebSocket not open, dropping message", { msg });
+            logger.info("WebSocket not open, dropping message", {
+              type: msg?.type,
+            });
             return;
           }
           socket.send(JSON.stringify(msg));
