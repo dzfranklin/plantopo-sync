@@ -1,8 +1,7 @@
 import { assertEquals } from "std/assert/assert_equals.ts";
 import { InsertPosition, resolveInsertPosition } from "./InsertPosition.ts";
 import { docTree } from "./DocTree.spec.ts";
-import { ConsoleLogger, Logger, NoopLogger } from "./Logger.ts";
-import { Rng } from "./Rng.ts";
+import { noopLogger, testLogger, withZeroRng } from "./helpers.spec.ts";
 
 const basicTree = docTree({
   id: "root",
@@ -35,31 +34,19 @@ const basicTree = docTree({
   ],
 });
 
-function logger(): Logger {
-  return new ConsoleLogger();
-}
-
-function noopLogger(): Logger {
-  return new NoopLogger();
-}
-
-function rng(): Rng {
-  return {
-    random() {
-      return 0;
-    },
-  };
-}
-
 Deno.test("firstChild with existing", () => {
   const position: InsertPosition = { type: "firstChild", parent: "parent" };
-  const got = resolveInsertPosition(logger(), rng(), basicTree, position);
+  const got = withZeroRng(() =>
+    resolveInsertPosition(testLogger(), basicTree, position)
+  );
   assertEquals(got, ["parent", "0"]);
 });
 
 Deno.test("firstChild of empty", () => {
   const position: InsertPosition = { type: "firstChild", parent: "childA" };
-  const got = resolveInsertPosition(logger(), rng(), basicTree, position);
+  const got = withZeroRng(() =>
+    resolveInsertPosition(testLogger(), basicTree, position)
+  );
   assertEquals(got, ["childA", "O"]);
 });
 
@@ -68,6 +55,8 @@ Deno.test("firstChild of nonexistent", () => {
     type: "firstChild",
     parent: "nonexistent",
   };
-  const got = resolveInsertPosition(noopLogger(), rng(), basicTree, position);
+  const got = withZeroRng(() =>
+    resolveInsertPosition(noopLogger(), basicTree, position)
+  );
   assertEquals(got, ["root", "0"]);
 });

@@ -1,5 +1,4 @@
 import { Logger, NoopLogger } from "./Logger.ts";
-import { Rng, CoreRng } from "./Rng.ts";
 import compareStrings from "./compareStrings.ts";
 import { fracIdxBetween } from "./fracIdx.ts";
 
@@ -47,7 +46,6 @@ export function changesetSize(cset: Changeset): number {
 
 export class WorkingChangeset {
   private _l: Logger;
-  private _rng: Rng;
 
   private _create = new Map<string, number>();
   private _delete = new Map<string, number>();
@@ -57,11 +55,9 @@ export class WorkingChangeset {
 
   constructor(
     base?: Omit<Changeset, "schema"> | null,
-    logger: Logger = new NoopLogger(),
-    rng: Rng = new CoreRng()
+    logger: Logger = new NoopLogger()
   ) {
     this._l = logger;
-    this._rng = rng;
     if (base) {
       this.change(base);
     }
@@ -312,7 +308,7 @@ export class WorkingChangeset {
 
     const before = sibIndices[spot] ?? "";
     const after = sibIndices[spot + 1] ?? "";
-    const resolved = fracIdxBetween(this._rng, before, after);
+    const resolved = fracIdxBetween(before, after);
 
     this._l.debug("resolved conflicting idx", { child, parent, idx, resolved });
     return resolved;

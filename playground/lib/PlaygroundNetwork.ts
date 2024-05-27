@@ -1,10 +1,4 @@
-import {
-  Channel,
-  Msg,
-  ServerDoc,
-  TransportConnecter,
-  randomNormal,
-} from "@/core";
+import { Channel, Msg, ServerDoc, TransportConnecter, Random } from "@/core";
 import { waitFor } from "./waitFor";
 import LogCollector from "./LogCollector";
 
@@ -222,7 +216,7 @@ export class PlaygroundNetwork {
   }
 
   private async _latencyDelay() {
-    await waitFor(this.latencyMs * randomNormal());
+    await waitFor(this.latencyMs * Random.normal());
   }
 
   private _notify() {

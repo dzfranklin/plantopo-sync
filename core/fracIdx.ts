@@ -1,4 +1,4 @@
-import { Rng } from "./Rng.ts";
+import { Random } from "./index.ts";
 
 const MIN_DIGIT = " ".charCodeAt(0);
 const MAX_DIGIT = "~".charCodeAt(0);
@@ -14,11 +14,7 @@ export function isFracIdx(value: unknown): value is string {
 }
 
 // From <https://madebyevan.com/algos/crdt-fractional-indexing/>
-export function fracIdxBetween(
-  rng: Rng,
-  before: string,
-  after: string
-): string {
+export function fracIdxBetween(before: string, after: string): string {
   let foundDifference = false;
   let result = "";
   let i = 0;
@@ -86,7 +82,7 @@ export function fracIdxBetween(
     // number will bias the result slightly. This doesn't matter when we
     // use a large base so the bias is small. The bias only really matters
     // for smaller bases such as base 2.
-    let jitter = Math.floor(rng.random() * MAX_JITTER);
+    let jitter = Math.floor(Random.float() * MAX_JITTER);
     while (jitter > 0) {
       const base = MAX_DIGIT - MIN_DIGIT + 1;
       const mod = jitter % base;

@@ -1,13 +1,11 @@
 import { Handler } from "../mux.ts";
 import { DocHandlerConfig } from "./muxDoc.ts";
-import { monotonicFactory as monotonicFactoryULIDFactory } from "ulid/mod.ts";
 import * as log from "../../log.ts";
 import * as prom from "prom-client/";
 import { wsTransport } from "../../../core/wsTransport.ts";
 import { errorResponse } from "../helpers.ts";
 import { fakeLatencyTransport } from "../../../core/fakeLatencyTransport.ts";
-
-const clientIdFactory = monotonicFactoryULIDFactory();
+import { Random } from "../../../core/index.ts";
 
 const activeRequestsGauge = new prom.Gauge({
   name: "doc_ws_active_requests",
@@ -48,7 +46,7 @@ export default function handleDocWS({
       }
     }
 
-    const clientId = "sid:" + clientIdFactory();
+    const clientId = "sid:" + Random.ulid();
 
     const { socket, response } = Deno.upgradeWebSocket(req);
 

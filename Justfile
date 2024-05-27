@@ -5,6 +5,7 @@ watch:
 
 lint:
   deno lint
+  ./tools/determinismLint.ts
 
 test:
   deno test --allow-all

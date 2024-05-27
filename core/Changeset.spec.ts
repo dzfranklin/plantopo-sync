@@ -2,6 +2,7 @@ import { assertEquals } from "std/assert/assert_equals.ts";
 import { WorkingChangeset, Changeset } from "./Changeset.ts";
 import { NoopLogger, ConsoleLogger } from "./Logger.ts";
 import { fracIdxBetween } from "./fracIdx.ts";
+import { withZeroRng } from "./helpers.spec.ts";
 
 export function changeset(cset?: Partial<Changeset>): Changeset {
   return {
@@ -9,10 +10,6 @@ export function changeset(cset?: Partial<Changeset>): Changeset {
     ...cset,
   };
 }
-
-const zeroRng = {
-  random: () => 0,
-};
 
 const onlyExplicitMode = false;
 
@@ -33,8 +30,7 @@ const createTest =
     const makeSubject = () =>
       new WorkingChangeset(
         changeset(config.base),
-        onlyExplicitMode ? new ConsoleLogger() : new NoopLogger(),
-        zeroRng
+        onlyExplicitMode ? new ConsoleLogger() : new NoopLogger()
       );
 
     const changes = Array.isArray(config.change)
@@ -45,14 +41,18 @@ const createTest =
     if (config.authoritativeOnly) {
       const subject = makeSubject();
       for (const change of changes) {
-        subject.changeAuthoritative(change);
+        withZeroRng(() => {
+          subject.changeAuthoritative(change);
+        });
       }
       const got = subject.collect();
       assertEquals(got, expected);
     } else if (config.nonAuthoritativeOnly) {
       const subject = makeSubject();
       for (const change of changes) {
-        subject.change(change);
+        withZeroRng(() => {
+          subject.change(change);
+        });
       }
       const got = subject.collect();
       assertEquals(got, expected);
@@ -60,7 +60,9 @@ const createTest =
       await t.step("non-authoritative", () => {
         const subject = makeSubject();
         for (const change of changes) {
-          subject.change(change);
+          withZeroRng(() => {
+            subject.change(change);
+          });
         }
         const got = subject.collect();
         assertEquals(got, expected);
@@ -68,7 +70,9 @@ const createTest =
       await t.step("authoritative", () => {
         const subject = makeSubject();
         for (const change of changes) {
-          subject.changeAuthoritative(change);
+          withZeroRng(() => {
+            subject.changeAuthoritative(change);
+          });
         }
         const got = subject.collect();
         assertEquals(got, expected);
@@ -193,7 +197,7 @@ Deno.test(
       create: ["N1", "N2"],
       position: [
         ["N1", "root", "A"],
-        ["N2", "root", fracIdxBetween(zeroRng, "A", "")],
+        ["N2", "root", withZeroRng(() => fracIdxBetween("A", ""))],
       ],
     },
   })
@@ -218,7 +222,7 @@ Deno.test(
       create: ["N1", "N2", "N3"],
       position: [
         ["N1", "root", "A"],
-        ["N2", "root", fracIdxBetween(zeroRng, "A", "O")],
+        ["N2", "root", withZeroRng(() => fracIdxBetween("A", "O"))],
         ["N3", "root", "O"],
       ],
     },

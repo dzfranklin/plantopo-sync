@@ -4,7 +4,8 @@
   "deno.codeLens.test": true,
   "deno.enablePaths": [
     "./core",
-    "./server"
+    "./server",
+    "./tools"
   ],
   "deno.config": "./deno.jsonc",
   "typescript.tsserver.experimental.enableProjectDiagnostics": false,

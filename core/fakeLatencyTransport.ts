@@ -1,11 +1,11 @@
+import { Random } from "./Random/mod.ts";
 import { Transport } from "./Transport.ts";
-import { randomNormal } from "./randomNormal.ts";
 
 export function fakeLatencyTransport(
   transport: Transport,
   latencyMs: number
 ): Transport {
-  const randomDelay = () => randomNormal() * latencyMs;
+  const randomDelay = () => Random.normal() * latencyMs;
   return {
     send: (msg) => {
       setTimeout(() => transport.send(msg), randomDelay());

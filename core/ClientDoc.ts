@@ -9,10 +9,10 @@ import {
   collectWorkingChangesets,
 } from "./Changeset.ts";
 import { InsertPosition, resolveInsertPosition } from "./InsertPosition.ts";
-import { Rng, CoreRng } from "./Rng.ts";
 import { Looper, IntervalLooper } from "./Looper.ts";
 import { ClientInfo, ServerUpdateMsg } from "./Msg.ts";
 import { ClientDocPersistence } from "./DocPersistence.ts";
+import { Random } from "./index.ts";
 
 const tickIntervalMs = 10;
 const ticksPerHeartbeat = 1000;
@@ -64,7 +64,6 @@ export class ClientDoc {
   private _connectFailures = 0;
 
   private _l: Logger;
-  private _rng: Rng;
   private _persistence: ClientDocPersistence;
   private _onChange = new Set<() => void>();
   private _collector = new DocTreeCollector();
@@ -90,7 +89,6 @@ export class ClientDoc {
     clientId: string;
     docId: string;
     logger?: Logger;
-    rng?: Rng;
     transport: TransportConnecter;
     persistence: ClientDocPersistence;
     ticker?: Looper;
@@ -103,7 +101,6 @@ export class ClientDoc {
       client: this.clientId,
     });
 
-    this._rng = config.rng ?? new CoreRng();
     this._persistence = config.persistence;
 
     this._base = new WorkingChangeset(null, this._l.child({ cset: "base" }));
@@ -410,13 +407,13 @@ export class ClientDoc {
   }
 
   private _resolveInsertPosition(position: InsertPosition): [string, string] {
-    return resolveInsertPosition(this._l, this._rng, this._tree, position);
+    return resolveInsertPosition(this._l, this._tree, position);
   }
 }
 
 function computeBackoffMs(failures: number): number {
   if (failures === 0) return 0;
-  const jitter = Math.floor(Math.random() * backoffIntervalMs);
+  const jitter = Math.floor(Random.float() * backoffIntervalMs);
   return Math.min(
     backoffMaxMs,
     backoffIntervalMs * backoffRate ** failures + jitter

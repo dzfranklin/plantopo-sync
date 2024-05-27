@@ -3,7 +3,7 @@ export {
   ServerDoc,
   combineChangesets,
   Channel,
-  randomNormal,
+  Random,
 } from "../core";
 export type {
   Transport,
