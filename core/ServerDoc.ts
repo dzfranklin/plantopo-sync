@@ -12,6 +12,8 @@ import { UserInfo } from "./UserInfo.ts";
 
 // TODO: timeout clients
 
+// TODO: shows too many peers
+
 // TODO: Add support for images and other external files to protocol
 
 export interface ServerDocConfig {
