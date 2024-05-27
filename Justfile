@@ -17,6 +17,13 @@ live-playground:
   #!/usr/bin/env bash
 
   dbDir="./server/.dev_db"
+
+  prometheus \
+    --config.file infra/dev/prometheus.yaml \
+    --storage.tsdb.path "$dbDir/prom" \
+    >/dev/null 2>/dev/null &
+  promPid=$!
+
   mkdir -p $dbDir
   RUST_LOG="watchexec_cli=ERROR" watchexec --restart -w ./core -w ./server --exts ts \
     PORT=4032 DOC_PATH="$dbDir/playground" \
@@ -28,6 +35,6 @@ live-playground:
   playgroundPid=$!
   popd
 
-  trap "kill $serverPid $playgroundPid && reset" INT TERM
-  sleep 1 && open "http://localhost:3000/local"
-  wait $serverPid $playgroundPid
+  trap "kill $serverPid $playgroundPid $promPid && reset" INT TERM
+  sleep 1 && open -a "Google Chrome" "http://localhost:9090" "http://localhost:3000/local"
+  wait $serverPid $playgroundPid $promPid
