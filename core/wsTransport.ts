@@ -37,6 +37,7 @@ export function wsTransport(
           socket.send(JSON.stringify(msg));
         },
         recv: () => inbound.recv(),
+        recvTimeout: (timeoutMs) => inbound.recvTimeout(timeoutMs),
         close: () => socket.close(),
       });
     });

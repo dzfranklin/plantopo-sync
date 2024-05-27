@@ -12,4 +12,5 @@ export interface Transport<Msg = CoreMsg> {
   send(msg: Readonly<Msg>): void;
   close(): void;
   recv(): Promise<Readonly<Msg> | null>;
+  recvTimeout(timeoutMs: number): Promise<Readonly<Msg> | null | undefined>;
 }

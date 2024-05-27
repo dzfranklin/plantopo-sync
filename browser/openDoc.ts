@@ -49,16 +49,19 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
       type: "auth",
       token: config.token,
     });
-    const resp = await transport.recv();
-    if (!resp) {
+
+    const resp = await transport.recvTimeout(10000);
+    if (resp === null) {
       l.warn("closed before auth response");
       return { type: "error" };
-    }
-    if (resp.type !== "authResult") {
+    } else if (resp === undefined) {
+      l.warn("timeout waiting for auth response");
+      transport.close();
+      return { type: "error" };
+    } else if (resp.type !== "authResult") {
       l.warn("expected authResult", { msg: resp });
       return { type: "error" };
-    }
-    if (!resp.success) {
+    } else if (!resp.success) {
       l.warn("auth failed", { issue: resp.issue });
       return { type: "error" };
     }

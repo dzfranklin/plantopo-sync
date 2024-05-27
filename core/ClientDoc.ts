@@ -14,8 +14,8 @@ import { Looper, IntervalLooper } from "./Looper.ts";
 import { ClientInfo, ServerUpdateMsg } from "./Msg.ts";
 import { ClientDocPersistence } from "./DocPersistence.ts";
 
-const sendIntervalMs = 10;
-const ticksPerHearbeat = 1000;
+const tickIntervalMs = 10;
+const ticksPerHeartbeat = 1000;
 
 const backoffIntervalMs = 50;
 const backoffRate = 2;
@@ -48,7 +48,10 @@ export class ClientDoc {
   private _closed = false;
   private _persistenceLoaded = false;
   private _initialTransportLoaded = false;
-  private _transportLoaded = false;
+
+  private _lastTick = 0;
+  private _connectTick = 0;
+  private _lastRxTick = 0;
 
   private _connecter: TransportConnecter;
   private _t:
@@ -65,7 +68,7 @@ export class ClientDoc {
   private _persistence: ClientDocPersistence;
   private _onChange = new Set<() => void>();
   private _collector = new DocTreeCollector();
-  private _stopSendLoop: () => void;
+  private _stopTicker: () => void;
 
   private _status = initialClientDocStatus;
   private _onStatusChange = new Set<(status: ClientDocStatus) => void>();
@@ -90,7 +93,7 @@ export class ClientDoc {
     rng?: Rng;
     transport: TransportConnecter;
     persistence: ClientDocPersistence;
-    sendLooper?: Looper;
+    ticker?: Looper;
   }) {
     this.clientId = config.clientId;
     this.docId = config.docId;
@@ -134,8 +137,8 @@ export class ClientDoc {
         this._l.error("load from persistence", { err });
       });
 
-    const sendLooper = config.sendLooper ?? new IntervalLooper(sendIntervalMs);
-    this._stopSendLoop = sendLooper.loop((tick) => this._sendTick(tick));
+    const ticker = config.ticker ?? new IntervalLooper(tickIntervalMs);
+    this._stopTicker = ticker.loop((tick) => this._tick(tick));
 
     this._connecter = config.transport;
     this.connect();
@@ -146,7 +149,7 @@ export class ClientDoc {
 
   close() {
     this._closed = true;
-    this._stopSendLoop();
+    this._stopTicker();
     if (this._t.type === "ready") {
       this._t.t.close();
     }
@@ -240,6 +243,8 @@ export class ClientDoc {
     }
     const t = connectResult.transport;
     this._t = { type: "ready", t };
+    this._connectTick = this._lastTick;
+    this._lastRxTick = 0;
 
     const recvLoop = async () => {
       let hasUpdate = false;
@@ -281,9 +286,24 @@ export class ClientDoc {
     this._update();
   }
 
-  private _sendTick(tick: number) {
+  private _tick(tick: number) {
+    this._lastTick = tick;
+
     if (this._t.type !== "ready") return;
     const t = this._t.t;
+
+    if (
+      this._lastRxTick === 0 &&
+      tick - this._connectTick > ticksPerHeartbeat
+    ) {
+      this._l.info("heartbeat timeout, never received");
+      t.close();
+      return;
+    } else if (tick - this._lastRxTick > ticksPerHeartbeat * 1.5) {
+      this._l.info("heartbeat timeout");
+      t.close();
+      return;
+    }
 
     const awareness = this._aware;
     const changeset = this._changes.collect(this._seqSent);
@@ -303,7 +323,7 @@ export class ClientDoc {
         type: "update",
         awareness,
       });
-    } else if (tick % ticksPerHearbeat === 0) {
+    } else if (tick % ticksPerHeartbeat === 0) {
       t.send({
         type: "update",
         awareness,
@@ -314,6 +334,8 @@ export class ClientDoc {
   }
 
   private _onServerUpdateMsg(msg: ServerUpdateMsg, isLoad: boolean) {
+    this._lastRxTick = this._lastTick;
+
     if (isLoad) {
       this._base.clear();
     }

@@ -94,7 +94,7 @@ export default function handleDocWS({
 
     const doc = await docManager.get(docId);
     if (!doc) {
-      log.error("doc not found", { docId });
+      log.info("doc not found", { docId });
       // just have the client retry, this should fail authz next time
       return response;
     }
