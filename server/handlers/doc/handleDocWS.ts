@@ -5,6 +5,7 @@ import * as log from "../../log.ts";
 import * as prom from "prom-client/";
 import { wsTransport } from "../../../core/wsTransport.ts";
 import { errorResponse } from "../helpers.ts";
+import { fakeLatencyTransport } from "../../../core/fakeLatencyTransport.ts";
 
 const clientIdFactory = monotonicFactoryULIDFactory();
 
@@ -39,6 +40,14 @@ export default function handleDocWS({
     const docId = url.searchParams.get("docId");
     if (!docId) return errorResponse(400, "missing docId search parameter");
 
+    let fakeLatency: number | null = null;
+    if (url.searchParams.has("_fakeLatency")) {
+      fakeLatency = parseFloat(url.searchParams.get("_fakeLatency")!);
+      if (isNaN(fakeLatency)) {
+        return errorResponse(400, "invalid _fakeLatency search parameter");
+      }
+    }
+
     const clientId = "sid:" + clientIdFactory();
 
     const { socket, response } = Deno.upgradeWebSocket(req);
@@ -47,6 +56,7 @@ export default function handleDocWS({
       docId,
       remoteHost: info.remoteAddr.hostname,
       clientId,
+      fakeLatency,
     });
     activeRequestsGauge.inc();
     const start = Date.now();
@@ -55,7 +65,11 @@ export default function handleDocWS({
       activeRequestsGauge.dec();
     });
 
-    const transport = await wsTransport(socket, log.Logger);
+    let transport = await wsTransport(socket, log.Logger);
+
+    if (fakeLatency !== null) {
+      transport = fakeLatencyTransport(transport, fakeLatency);
+    }
 
     // Authenticate
 

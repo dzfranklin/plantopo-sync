@@ -27,13 +27,25 @@ export interface OpenDocConfig {
   endpoint: string;
   token: string;
   logger?: Logger;
+  extraParams?: Record<string, string>;
 }
 
 function wsConnecter(config: OpenDocConfig): TransportConnecter {
   const logger = config.logger || new ConsoleLogger();
   return async (docId) => {
     const l = logger.child({ docId });
-    const inner = new WebSocket(config.endpoint + "/doc?docId=" + docId);
+
+    const params = new URLSearchParams();
+    params.set("docId", docId);
+    if (config.extraParams) {
+      for (const [key, value] of Object.entries(config.extraParams)) {
+        params.set(key, value);
+      }
+    }
+    const url = config.endpoint + "/doc?" + params.toString();
+
+    l.info("connecting to", { url });
+    const inner = new WebSocket(url);
 
     let transport: Transport;
     try {

@@ -12,6 +12,8 @@ export default function LocalPlayground() {
   const logs = useMemo(() => new LogCollector(), []);
   const [docId, setDocId] = useState<string>("playground-doc");
 
+  const [latencyMs, setLatencyMs] = useState(10);
+
   const [state, setState] = useState<{
     logs: LogCollector;
     clientA: Doc;
@@ -22,6 +24,9 @@ export default function LocalPlayground() {
       endpoint: "ws://localhost:4032/v1",
       token: "local-playground",
       logger: logs.logger("doc"),
+      extraParams: {
+        _fakeLatency: latencyMs.toString(),
+      },
     };
     const clientA = openDoc(config, docId);
     const clientB = openDoc(config, docId);
@@ -34,12 +39,22 @@ export default function LocalPlayground() {
       clientA.close();
       clientB.close();
     };
-  }, [docId, logs]);
+  }, [docId, latencyMs, logs]);
 
   return (
     <main className="h-screen grid grid-cols-2 grid-rows-[min-content_minmax(0,1fr)_minmax(0,1fr)] p-2">
       <div className="flex col-span-full pb-1 text-sm gap-2">
         <h1 className="mr-auto">Local playground</h1>
+
+        <label className="mx-6">
+          <input
+            type="number"
+            value={latencyMs}
+            onChange={(e) => setLatencyMs(+e.target.value)}
+            className="mr-1 w-14 text-right border rounded-sm border-gray-300 px-1"
+          />
+          ms median latency
+        </label>
 
         <form
           onSubmit={(e) => {

@@ -1,4 +1,10 @@
-export { ClientDoc, ServerDoc, combineChangesets, Channel } from "../core";
+export {
+  ClientDoc,
+  ServerDoc,
+  combineChangesets,
+  Channel,
+  randomNormal,
+} from "../core";
 export type {
   Transport,
   TransportConnecter,

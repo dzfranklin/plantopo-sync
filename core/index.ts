@@ -25,3 +25,4 @@ import Channel from "./Channel.ts";
 export { Channel };
 export type { UserInfo } from "./UserInfo.ts";
 export { wsTransport } from "./wsTransport.ts";
+export { randomNormal } from "./randomNormal.ts";
