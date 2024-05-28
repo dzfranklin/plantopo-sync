@@ -28,12 +28,14 @@ export default function mux(
     const url = new URL(req.url);
 
     requestCounter.inc();
-    log.info("request", {
-      requestMethod: req.method,
-      requestPath: url.pathname,
-      requestSearch: url.search,
-      remoteAddr: info.remoteAddr,
-    });
+    if (url.pathname.startsWith("/v1/")) {
+      log.info("request v1", {
+        requestMethod: req.method,
+        requestPath: url.pathname,
+        requestSearch: url.search,
+        remoteAddr: info.remoteAddr,
+      });
+    }
 
     switch (url.pathname) {
       case "/v1/doc":
