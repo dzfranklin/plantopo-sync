@@ -1,3 +1,5 @@
+import { Clock } from "./Clock.ts";
+
 interface Resolver<T> {
   resolve: (msg: T) => void;
   reject: (err: unknown) => void;
@@ -30,7 +32,7 @@ export default class Channel<T> {
       return Promise.resolve(this._queue.shift()!);
     } else {
       return new Promise<T | undefined>((resolve, reject) => {
-        const timeout = setTimeout(() => {
+        const timeout = Clock.timeout(() => {
           resolve(undefined);
 
           const i = this._waiters.findIndex((w) => w.reject === reject);
@@ -40,7 +42,7 @@ export default class Channel<T> {
         }, timeoutMs);
         this._waiters.push({
           resolve: (msg) => {
-            clearTimeout(timeout);
+            Clock.cancelTimeout(timeout);
             resolve(msg);
           },
           reject,

@@ -1,5 +1,6 @@
 // Adapted from <https://github.com/kt3k/ulid/blob/v0.3.0/mod.ts>
 
+import { Clock } from "../Clock.ts";
 import { Random } from "../index.ts";
 
 // Copyright 2023 Yoshiya Hinosawa. All rights reserved. MIT license.
@@ -118,7 +119,7 @@ export function detectPrng(): PRNG {
 }
 
 export function factory(prng: PRNG = detectPrng()): ULID {
-  return function ulid(seedTime: number = Date.now()): string {
+  return function ulid(seedTime: number = Clock.now()): string {
     return encodeTime(seedTime, TIME_LEN) + encodeRandom(RANDOM_LEN, prng);
   };
 }
@@ -126,7 +127,7 @@ export function factory(prng: PRNG = detectPrng()): ULID {
 export function monotonicFactory(prng: PRNG = detectPrng()): ULID {
   let lastTime = 0;
   let lastRandom: string;
-  return function ulid(seedTime: number = Date.now()): string {
+  return function ulid(seedTime: number = Clock.now()): string {
     if (seedTime <= lastTime) {
       const incrementedRandom = (lastRandom = incrementBase32(lastRandom));
       return encodeTime(lastTime, TIME_LEN) + incrementedRandom;

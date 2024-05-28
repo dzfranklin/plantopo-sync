@@ -1,3 +1,4 @@
+import { Clock } from "./Clock.ts";
 import { Random } from "./Random/mod.ts";
 import { Transport } from "./Transport.ts";
 
@@ -8,20 +9,20 @@ export function fakeLatencyTransport(
   const randomDelay = () => Random.normal() * latencyMs;
   return {
     send: (msg) => {
-      setTimeout(() => transport.send(msg), randomDelay());
+      Clock.timeout(() => transport.send(msg), randomDelay());
     },
     close: () => transport.close(),
     recv: () =>
       new Promise((resolve) => {
-        setTimeout(() => resolve(transport.recv()), randomDelay());
+        Clock.timeout(() => resolve(transport.recv()), randomDelay());
       }),
     recvTimeout: (timeoutMs) =>
       new Promise((resolve) => {
         const delay = randomDelay();
         if (delay > timeoutMs) {
-          setTimeout(() => resolve(undefined), timeoutMs);
+          Clock.timeout(() => resolve(undefined), timeoutMs);
         } else {
-          setTimeout(
+          Clock.timeout(
             () => resolve(transport.recvTimeout(timeoutMs - delay)),
             delay
           );

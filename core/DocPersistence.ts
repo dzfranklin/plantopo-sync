@@ -24,33 +24,25 @@ export class InMemoryServerDocPersistence implements ServerDocPersistence {
     }
   }
 
-  async load(doc: string): Promise<Changeset | null> {
-    await waitTick();
-    return this._d.get(doc) ?? null;
+  load(doc: string): Promise<Changeset | null> {
+    return Promise.resolve(this._d.get(doc) ?? null);
   }
 
-  async save(doc: string, value: Changeset): Promise<void> {
-    await waitTick();
+  save(doc: string, value: Changeset): Promise<void> {
     this._d.set(doc, value);
+    return Promise.resolve();
   }
 }
 
 export class InMemoryClientDocPersistence implements ClientDocPersistence {
   private _d = new Map<string, ClientDocSave>();
 
-  async load(doc: string): Promise<ClientDocSave | null> {
-    await waitTick();
-    return this._d.get(doc) ?? null;
+  load(doc: string): Promise<ClientDocSave | null> {
+    return Promise.resolve(this._d.get(doc) ?? null);
   }
 
-  async save(doc: string, value: ClientDocSave): Promise<void> {
-    await waitTick();
+  save(doc: string, value: ClientDocSave): Promise<void> {
     this._d.set(doc, value);
+    return Promise.resolve();
   }
-}
-
-function waitTick(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve);
-  });
 }

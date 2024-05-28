@@ -9,10 +9,10 @@ import {
   collectWorkingChangesets,
 } from "./Changeset.ts";
 import { InsertPosition, resolveInsertPosition } from "./InsertPosition.ts";
-import { Looper, IntervalLooper } from "./Looper.ts";
 import { ClientInfo, ServerUpdateMsg } from "./Msg.ts";
 import { ClientDocPersistence } from "./DocPersistence.ts";
 import { Random } from "./index.ts";
+import { Clock } from "./Clock.ts";
 
 const tickIntervalMs = 10;
 const ticksPerHeartbeat = 1000;
@@ -67,7 +67,7 @@ export class ClientDoc {
   private _persistence: ClientDocPersistence;
   private _onChange = new Set<() => void>();
   private _collector = new DocTreeCollector();
-  private _stopTicker: () => void;
+  private _ticker: number;
 
   private _status = initialClientDocStatus;
   private _onStatusChange = new Set<(status: ClientDocStatus) => void>();
@@ -91,7 +91,6 @@ export class ClientDoc {
     logger?: Logger;
     transport: TransportConnecter;
     persistence: ClientDocPersistence;
-    ticker?: Looper;
   }) {
     this.clientId = config.clientId;
     this.docId = config.docId;
@@ -134,8 +133,7 @@ export class ClientDoc {
         this._l.error("load from persistence", { err });
       });
 
-    const ticker = config.ticker ?? new IntervalLooper(tickIntervalMs);
-    this._stopTicker = ticker.loop((tick) => this._tick(tick));
+    this._ticker = Clock.interval(() => this._tick(), tickIntervalMs);
 
     this._connecter = config.transport;
     this.connect();
@@ -146,7 +144,7 @@ export class ClientDoc {
 
   close() {
     this._closed = true;
-    this._stopTicker();
+    Clock.cancelInterval(this._ticker);
     if (this._t.type === "ready") {
       this._t.t.close();
     }
@@ -276,15 +274,16 @@ export class ClientDoc {
     const backoffMs = computeBackoffMs(this._connectFailures);
     this._t = {
       type: "closed",
-      reconnectingAtUnix: Date.now() + backoffMs,
+      reconnectingAtUnix: Clock.now() + backoffMs,
     };
     this._l.info("reconnecting in", { backoffMs });
-    setTimeout(() => this._connect(), backoffMs);
+    Clock.timeout(() => this._connect(), backoffMs);
     this._update();
   }
 
-  private _tick(tick: number) {
-    this._lastTick = tick;
+  private _tick() {
+    this._lastTick++;
+    const tick = this._lastTick;
 
     if (this._t.type !== "ready") return;
     const t = this._t.t;
