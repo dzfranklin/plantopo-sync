@@ -62,4 +62,4 @@ const handlerConfig: HandlerConfig = {
 
 // Serve
 
-Deno.serve({ hostname, port }, mux(handlerConfig));
+Deno.serve({ hostname, port, onListen: () => {} }, mux(handlerConfig));
