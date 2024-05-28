@@ -56,10 +56,10 @@ const docManager = new DocManager({
 const authorizer = TestAllowAllAuthorizer; // TODO: implement
 const authenticator = TestAlwaysBobAuthenticator; // TODO: implement
 
-const muxConfig: HandlerConfig = {
+const handlerConfig: HandlerConfig = {
   doc: { authenticator, authorizer, docManager },
 };
 
 // Serve
 
-Deno.serve({ hostname, port }, mux(muxConfig));
+Deno.serve({ hostname, port }, mux(handlerConfig));
