@@ -33,7 +33,7 @@ export default function mux(
         requestMethod: req.method,
         requestPath: url.pathname,
         requestSearch: url.search,
-        remoteAddr: info.remoteAddr,
+        remoteAddr: info.remoteAddr.hostname,
       });
     }
 
