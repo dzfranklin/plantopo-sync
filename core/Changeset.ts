@@ -191,7 +191,7 @@ export class WorkingChangeset {
     }
     if (cset.property) {
       for (const [obj, key, value] of cset.property) {
-        this._setProperty(obj, key, value, meta);
+        this._setProperty(obj, key, value, meta, authoritative);
       }
     }
     if (cset.position) {
@@ -242,8 +242,15 @@ export class WorkingChangeset {
     obj: string,
     key: string,
     value: unknown,
-    meta: number = 0
+    meta: number,
+    authoritative: boolean
   ) {
+    if (authoritative) {
+      if (!this._create.has(obj)) {
+        this._l.debug("setProperty: nonexistent obj", { obj });
+        return;
+      }
+    }
     if (!this._property.has(obj)) this._property.set(obj, new Map());
     this._property.get(obj)!.set(key, [value, meta]);
   }
@@ -252,7 +259,7 @@ export class WorkingChangeset {
     child: string,
     parent: string,
     idx: string,
-    meta: number = 0,
+    meta: number,
     authoritative: boolean
   ) {
     if (child === "root") {

@@ -384,3 +384,29 @@ Deno.test(
     },
   })
 );
+
+Deno.test(
+  "authoritative rejects roperty on nonexistent",
+  createTest({
+    authoritativeOnly: true,
+    base: {},
+    change: {
+      property: [["N1", "foo", "bar"]],
+    },
+    expected: {},
+  })
+);
+
+Deno.test(
+  "non-authoritative accepts property on nonexistent",
+  createTest({
+    nonAuthoritativeOnly: true,
+    base: {},
+    change: {
+      property: [["N1", "foo", "bar"]],
+    },
+    expected: {
+      property: [["N1", "foo", "bar"]],
+    },
+  })
+);
