@@ -25,6 +25,7 @@ export class Handle {
       },
       stdin: "piped",
       stdout: "piped",
+      cwd: import.meta.dirname,
     });
     this._p = cmd.spawn();
     this.out = this._p.stdout

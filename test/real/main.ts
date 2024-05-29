@@ -281,34 +281,32 @@ const beforeConnect = Date.now();
 await waitForAllConnected();
 timings.set("connect", (Date.now() - beforeConnect) / 1000);
 
-// This takes .7-1.2s, way too long
+for (const i in states) {
+  if (states[i] === null) {
+    continue;
+  }
+  assertEquals(
+    states[i],
+    {
+      base: { schema: 0 },
+      changes: { schema: 0 },
+    },
+    `state[${i}] === empty`
+  );
+}
 
-// for (const i in states) {
-//   if (states[i] === null) {
-//     continue;
-//   }
-//   assertEquals(
-//     states[i],
-//     {
-//       base: { schema: 0 },
-//       changes: { schema: 0 },
-//     },
-//     `state[${i}] === empty`
-//   );
-// }
+for (const client of clients) {
+  client.send({
+    type: "call",
+    method: "add",
+    args: [{ type: "firstChild", parent: "root" }],
+  });
+}
 
-// for (const client of clients) {
-//   client.send({
-//     type: "call",
-//     method: "add",
-//     args: [{ type: "firstChild", parent: "root" }],
-//   });
-// }
-
-// const beforeConverge = Date.now();
-// await waitForAll((s) => s?.base?.create?.length === clients.length);
-// await assertConverged();
-// timings.set("converge", (Date.now() - beforeConverge) / 1000);
+const beforeConverge = Date.now();
+await waitForAll((s) => s?.base?.create?.length === clients.length);
+await assertConverged();
+timings.set("converge", (Date.now() - beforeConverge) / 1000);
 
 console.log("Timings", timings);
 
