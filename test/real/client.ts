@@ -25,7 +25,13 @@ const initialState = ClientDocSaveSchema.nullable().parse(
   JSON.parse(args.initialState)
 );
 
-const rng = new PGCSource(0, 42 + id, 0, 54);
+const seed = parseInt(args.seed);
+if (isNaN(seed)) {
+  console.error("--seed <number> is required");
+  Deno.exit(1);
+}
+
+const rng = new PGCSource(0, seed + id, 0, 54);
 Random.__debugSetGlobal(rng);
 
 let persisted: ClientDocSave | null = initialState;

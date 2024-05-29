@@ -1,2 +1,2 @@
-clients: 1000
+clients: 250
 probability_auth_issue: 0.01

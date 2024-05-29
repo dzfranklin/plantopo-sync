@@ -7,11 +7,11 @@ import * as log from "../../server/log.ts";
 import mux, { HandlerConfig } from "../../server/handlers/mux.ts";
 import { parseArgs } from "std/cli/parse_args.ts";
 import { setupLogs } from "../setupLogs.ts";
+import { Tracer } from "../../server/Tracer.ts";
 
 setupLogs();
 
 const args = parseArgs(Deno.args);
-console.log("server", JSON.stringify(args));
 
 const requiredArg = (name: string) => {
   if (Object.keys(args).indexOf(name) === -1) {
@@ -24,10 +24,11 @@ const requiredArg = (name: string) => {
 const port = parseInt(requiredArg("port"));
 const probabilityAuthIssue = parseFloat(requiredArg("probabilityAuthIssue"));
 const stateDir = requiredArg("stateDir");
+const seed = parseInt(requiredArg("seed"));
 
 Deno.mkdirSync(stateDir, { recursive: true });
 
-const rng = new PGCSource(0, 42, 0, 54);
+const rng = new PGCSource(0, seed, 0, 54);
 Random.__debugSetGlobal(rng);
 
 const docDB = await DocDB.open({ path: stateDir });
@@ -36,6 +37,8 @@ const docs = new DocManager({
   persistence: docDB,
   logger: log.Logger,
 });
+
+const tracer = await Tracer.open(stateDir);
 
 const handlerConfig: HandlerConfig = {
   doc: {
@@ -59,6 +62,7 @@ const handlerConfig: HandlerConfig = {
       },
       checkAdmin: (_token) => Random.float() > 0.8,
     },
+    tracer,
   },
 };
 
@@ -73,23 +77,14 @@ let server = Deno.serve(
 );
 
 Deno.addSignalListener("SIGINT", async () => {
-  log.info("Shutting down");
+  console.log("Shutting down server");
 
   await server.shutdown();
 
-  const docState = await docDB.load("doc");
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await tracer.close();
 
-  const doneMsg = {
-    type: "done",
-    state: {
-      doc: docState,
-      clock: Clock.now(),
-      rng: rng.next32(),
-    },
-  };
-  try {
-    await Deno.stdout.write(new TextEncoder().encode(JSON.stringify(doneMsg)));
-  } catch (err) {}
+  console.log("Shut down server");
 
   Deno.exit();
 });

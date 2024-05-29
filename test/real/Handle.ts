@@ -44,7 +44,7 @@ export class Handle {
     this._in = this._p.stdin.getWriter();
 
     Deno.addSignalListener("SIGINT", () => {
-      this.kill();
+      this.quit();
     });
   }
 
@@ -55,7 +55,8 @@ export class Handle {
     await this._in.write(Handle.enc.encode(JSON.stringify(data) + "\n"));
   }
 
-  async kill() {
-    this._p.kill();
+  async quit() {
+    this._p.ref();
+    this._p.kill("SIGINT");
   }
 }

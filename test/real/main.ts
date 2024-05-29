@@ -12,6 +12,9 @@ import { equal } from "std/assert/equal.ts";
 import { Handle } from "./Handle.ts";
 import { logLevelFromEnv } from "../setupLogs.ts";
 import { DocGetResponse } from "../../server/handlers/doc/handleDocGet.ts";
+import { changesetIsEmpty } from "../../core/Changeset.ts";
+
+let disableRegularLogs = false;
 
 const start = Date.now();
 
@@ -28,10 +31,34 @@ log.setup({
   },
 });
 
-const rng = new PGCSource(0, 42, 0, 54);
-Random.__debugSetGlobal(rng);
-
 const args = parseArgs(Deno.args);
+
+if (args.untilFailure) {
+  for (let run = 0; ; run++) {
+    let start = Date.now();
+    const p = Deno.run({
+      cmd: [
+        import.meta.filename!,
+        ...Deno.args.filter((a) => a !== "--untilFailure"),
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const [status, stdout, stderr] = await Promise.all([
+      p.status(),
+      p.output(),
+      p.stderrOutput(),
+    ]);
+    p.close();
+    console.log(`Run ${run + 1} in ${(Date.now() - start) / 1000}s`);
+    if (!status.success) {
+      Deno.stdout.writeSync(stdout);
+      Deno.stderr.writeSync(stderr);
+      console.log("Failed after ", run + 1, " runs");
+      Deno.exit(1);
+    }
+  }
+}
 
 const serverPort = args.serverPort || "4100";
 
@@ -41,6 +68,7 @@ const defaultCaseConfig = {
   clients: 10,
   probability_auth_issue: 0.1,
   disable_fake_latency: false,
+  seed: 42,
 };
 
 const caseName = args._[0];
@@ -50,11 +78,19 @@ const caseConfig = {
   ...yaml.parse(await Deno.readTextFile(casePath)),
 };
 
+if ("seed" in args) {
+  caseConfig.seed = args.seed;
+}
+
 console.log(caseConfig);
+
+const rng = new PGCSource(0, caseConfig.seed, 0, 54);
+Random.__debugSetGlobal(rng);
 
 let timings = new Map<string, number>();
 
 const stateDir = await Deno.makeTempDir();
+console.log("stateDir", stateDir);
 
 const clients = new Array(caseConfig.clients).fill(null).map(
   (_, i) =>
@@ -63,6 +99,8 @@ const clients = new Array(caseConfig.clients).fill(null).map(
       serverPort,
       "--id",
       i.toString(),
+      "--seed",
+      (caseConfig.seed + i).toString(),
       ...(caseConfig.disable_fake_latency ? ["--disableFakeLatency"] : []),
       "--initialState",
       JSON.stringify(
@@ -83,9 +121,11 @@ const doLog = (msg: any) => {
   let impl: (...args: any[]) => void;
   switch (msg.log.level) {
     case "DEBUG":
+      if (disableRegularLogs) return;
       impl = log.debug;
       break;
     case "INFO":
+      if (disableRegularLogs) return;
       impl = log.info;
       break;
     case "PASSTHROUGH":
@@ -110,8 +150,8 @@ const doLog = (msg: any) => {
 const states = new Array(clients.length).fill(undefined);
 const connected = new Array(clients.length).fill(false);
 
-for (const client of clients) {
-  client.send({
+for (let i = 0; i < Math.floor(clients.length / 2); i++) {
+  clients[i].send({
     type: "call",
     method: "add",
     args: [{ type: "firstChild", parent: "root" }],
@@ -125,6 +165,8 @@ const server = new Handle("server.ts", 0, [
   serverPort,
   "--probabilityAuthIssue",
   caseConfig.probability_auth_issue,
+  "--seed",
+  caseConfig.seed,
 ]);
 
 const beforeServerUp = Date.now();
@@ -146,49 +188,71 @@ if (inspectServer) {
 
 spawnGlobalStateUpdater();
 
-const beforeConnect = Date.now();
-await waitForAllConnected();
-timings.set("connect", (Date.now() - beforeConnect) / 1000);
+let failure: any = null;
+try {
+  const beforeConnect = Date.now();
+  await waitForAllConnected();
+  timings.set("connect", (Date.now() - beforeConnect) / 1000);
 
-const beforeConverge = Date.now();
-await waitForAll((s) => s?.base?.create?.length === clients.length);
-await assertConverged();
-timings.set("converge", (Date.now() - beforeConverge) / 1000);
-
-// Check final state
-
-const finalServerState = await fetchServerState();
-
-if (clients.length > 0) {
-  assertEquals(finalServerState.doc.props, {
-    "unsynced-in-initial-0": 42,
-  });
-}
-
-const indices = new Set();
-for (const node of finalServerState.doc.children) {
-  if (indices.has(node.idx)) {
-    throw new Error("duplicate index");
+  for (let i = Math.floor(clients.length / 2); i < clients.length; i++) {
+    clients[i].send({
+      type: "call",
+      method: "add",
+      args: [{ type: "firstChild", parent: "root" }],
+    });
   }
-  indices.add(node.idx);
+
+  const beforeConverge = Date.now();
+  await awaitConverged(
+    10_000,
+    (serverState) => serverState.doc.children.length === clients.length
+  );
+  timings.set("converge", (Date.now() - beforeConverge) / 1000);
+
+  // Check final state
+
+  const finalServerState = await fetchServerState();
+
+  if (clients.length > 0) {
+    assertEquals(finalServerState.doc.props, {
+      "unsynced-in-initial-0": 42,
+    });
+  }
+
+  const indices = new Set();
+  for (const node of finalServerState.doc.children) {
+    if (indices.has(node.idx)) {
+      throw new Error("duplicate index");
+    }
+    indices.add(node.idx);
+  }
+} catch (err) {
+  failure = err;
+} finally {
+  disableRegularLogs = true;
+
+  await server.quit();
+
+  console.log("Trace written to ", stateDir + "/trace.db");
+  console.log("Timings", timings);
+
+  const elapsedS = (Date.now() - start) / 1000;
+  console.log(`Took ${elapsedS}s`);
+
+  if (inspectServer) {
+    prompt("Press enter to quit");
+  }
+
+  for (const client of clients) {
+    client.quit();
+  }
+
+  if (failure !== null) {
+    throw failure;
+  } else {
+    console.log("Success");
+  }
 }
-
-// Done with checks
-
-console.log("Timings", timings);
-
-const elapsedS = (Date.now() - start) / 1000;
-console.log(`All checks passed in ${elapsedS}s!`);
-
-if (inspectServer) {
-  prompt("Press enter to quit");
-}
-
-server.kill();
-for (const client of clients) {
-  client.kill();
-}
-Deno.exit(0);
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -274,7 +338,7 @@ async function waitForAll(filter: (s: any) => boolean) {
     await inspectAll();
     await sleep(100);
   }
-  console.log("All connecting");
+  console.log("All connected");
 }
 
 async function waitForAllConnected() {
@@ -308,48 +372,65 @@ async function fetchServerState(): Promise<DocGetResponse> {
       continue;
     }
     return await resp.json();
-    break;
   }
 }
 
-async function assertConverged() {
-  let serverState = (await fetchServerState()).changeset;
-
-  const clientBases = states.map((s) => s.base);
-
-  const different = clientBases.filter((s) => !equal(s, serverState));
-  if (different.length === 0) {
-    return;
-  }
-
-  const bySer = new Map<string, number>();
-  for (const v of different) {
-    const ser = stableJSONStringify(v, { space: 2 });
-    if (!bySer.has(ser)) {
-      bySer.set(ser, 0);
+async function awaitConverged(
+  timeoutMs: number,
+  serverPredicate: (serverState: DocGetResponse) => boolean
+) {
+  const start = Date.now();
+  for (let i = 0; ; i++) {
+    const serverState = await fetchServerState();
+    if (serverPredicate(serverState) && isConverged(serverState)) {
+      return;
     }
-    bySer.set(ser, bySer.get(ser)! + 1);
+    if (Date.now() - start > timeoutMs) {
+      console.log("Did not converge within ", timeoutMs / 1000, "s");
+      if (!serverPredicate(serverState)) {
+        throw new AssertionError(
+          "Server did not reach expected state (per predicate)"
+        );
+      }
+      await assertConverged(serverState);
+    }
+    if (i === 0) {
+      console.log("Waiting for convergence");
+    }
+    await inspectAll();
+    await sleep(100);
+  }
+}
+
+async function assertConverged(serverState: any) {
+  if (isConverged(serverState)) {
+    return true;
   }
 
+  const outDir = "/tmp/convergence_failure";
   try {
-    await Deno.remove("./incorrect", { recursive: true });
+    await Deno.remove(outDir, { recursive: true });
   } catch (e) {}
-  await Deno.mkdir("./incorrect", { recursive: true });
-
+  await Deno.mkdir(outDir, { recursive: true });
   await Deno.writeTextFile(
-    "./incorrect/server.json",
-    stableJSONStringify(serverState, { space: 2 })
+    outDir + "/server.json",
+    stableJSONStringify(serverState.changeset, { space: 2 })
   );
-
-  let i = 0;
-  for (const ser of bySer.keys()) {
-    await Deno.writeTextFile(`./incorrect/${i}.json`, ser);
-    i++;
+  for (const client of states) {
+    await Deno.writeTextFile(
+      outDir + "/client-" + client + ".json",
+      stableJSONStringify(states[client], { space: 2 })
+    );
   }
+  throw new AssertionError(`Convergence failure, see ${outDir} for details`);
+}
 
-  assertEquals;
-
-  throw new AssertionError(
-    `${different.length} / ${clients.length} incorrect, ${bySer.size} different incorrect states. Wrote to ./incorrect/`
-  );
+function isConverged(serverState: any) {
+  if (
+    states.every(
+      (s) => equal(s.base, serverState.changeset) && changesetIsEmpty(s.changes)
+    )
+  ) {
+    return true;
+  }
 }

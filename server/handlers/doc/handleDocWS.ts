@@ -33,6 +33,7 @@ export default function handleDocWS({
   authenticator,
   authorizer,
   docManager,
+  tracer,
 }: DocHandlerConfig): Handler {
   return async (req: Request, info: Deno.ServeHandlerInfo, url: URL) => {
     const docId = url.searchParams.get("docId");
@@ -78,6 +79,13 @@ export default function handleDocWS({
 
     if (fakeLatency !== null) {
       transport = fakeLatencyTransport(transport, fakeLatency);
+    }
+
+    if (tracer) {
+      transport = tracer.wrap(
+        info.remoteAddr.hostname + "_" + clientId,
+        transport
+      );
     }
 
     // Authenticate

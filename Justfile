@@ -10,7 +10,7 @@ lint:
 test:
   deno test --allow-all
   tsc --build ./browser/tsconfig.json
-  test/real/main.ts zero >/dev/null # just to make sure it compiles
+  deno check test/real/main.ts
 
 serve:
   DOC_PATH="./server/.dev_db/serve" \
