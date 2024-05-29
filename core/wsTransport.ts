@@ -1,6 +1,6 @@
 import Channel from "./Channel.ts";
 import { Logger } from "./Logger.ts";
-import { Msg } from "./Msg.ts";
+import { Msg, MsgSchema } from "./Msg.ts";
 import { Transport } from "./Transport.ts";
 
 export function wsTransport(
@@ -15,8 +15,7 @@ export function wsTransport(
 
       socket.addEventListener("message", (event) => {
         try {
-          const msg = JSON.parse(event.data) as Msg;
-          // TODO: validate
+          const msg = MsgSchema.parse(JSON.parse(event.data));
           inbound.send(msg);
         } catch (e) {
           logger.error("Failed to parse message", { error: e.message });

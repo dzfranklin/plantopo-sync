@@ -7,8 +7,13 @@
     "target": "ESNext",
     "allowImportingTsExtensions": true,
     "noEmit": true,
+    "paths": {
+      "zod/mod.ts": [
+        "./node_modules/zod/lib/index.js"
+      ]
+    }
   },
   "exclude": [
     "*.spec.ts"
-  ]
+  ],
 }

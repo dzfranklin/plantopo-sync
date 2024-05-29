@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "zod/mod.ts": [
+        "./node_modules/zod/lib/index.js"
       ]
     }
   },

@@ -1,51 +1,92 @@
-import { Changeset } from "./Changeset.ts";
-import { UserInfo } from "./UserInfo.ts";
+import { UserInfoSchema } from "./UserInfo.ts";
+import { z } from "zod/mod.ts";
 
-export type Msg =
-  | AuthMsg
-  | AuthResultMsg
-  | UpdateMsg
-  | ServerUpdateMsg
-  | ErrorMsg;
+export const ChangesetSchema = z.object({
+  schema: z.literal(0),
+  /** obj */
+  create: z.array(z.string()).optional(),
+  /** obj */
+  delete: z.array(z.string()).optional(),
+  /** [obj, key, value] */
+  property: z.array(z.tuple([z.string(), z.string(), z.unknown()])).optional(),
+  /** [child, parent, idx] */
+  position: z.array(z.tuple([z.string(), z.string(), z.string()])).optional(),
+});
 
-export interface UpdateMsg {
-  type: "update";
-  awareness: Readonly<Record<string, unknown>>;
-  /** Required if changeset is provided */
-  seq?: number;
-  changeset?: Readonly<Changeset>;
-}
+export type Changeset = z.infer<typeof ChangesetSchema>;
 
-export interface ServerUpdateMsg {
-  type: "serverUpdate";
-  seq: number;
-  replyTo?: number;
-  clients: Readonly<ClientInfo[]>;
-  changeset?: Readonly<Changeset>;
-}
+const ClientInfoSchema = z
+  .object({
+    id: z.string(),
+    awareness: z.record(z.unknown()).readonly(),
+    user: UserInfoSchema.readonly(),
+  })
+  .readonly();
 
-export interface AuthMsg {
-  type: "auth";
-  token: string;
-}
+export type ClientInfo = z.infer<typeof ClientInfoSchema>;
 
-export interface AuthResultMsg {
-  type: "authResult";
-  success: boolean;
-  issue?: "invalidToken" | "permissionDenied";
+const UpdateMsgSchema = z
+  .object({
+    type: z.literal("update"),
+    awareness: z.record(z.unknown()).readonly(),
+    /** Required if changeset is provided */
+    seq: z.number().optional(),
+    changeset: ChangesetSchema.optional().readonly(),
+  })
+  .readonly();
 
-  /** Only present if success */
-  authz?: "read" | "write";
-  user?: UserInfo;
-}
+export type UpdateMsg = z.infer<typeof UpdateMsgSchema>;
 
-export interface ClientInfo {
-  id: string;
-  awareness: Readonly<Record<string, unknown>>;
-  user: Readonly<UserInfo>;
-}
+const ServerUpdateMsgSchema = z
+  .object({
+    type: z.literal("serverUpdate"),
+    seq: z.number(),
+    replyTo: z.number().optional(),
+    clients: z.array(ClientInfoSchema).readonly(),
+    changeset: ChangesetSchema.optional().readonly(),
+  })
+  .readonly();
 
-export interface ErrorMsg {
-  type: "error";
-  error: "no-write-permission";
-}
+export type ServerUpdateMsg = z.infer<typeof ServerUpdateMsgSchema>;
+
+export const AuthMsgSchema = z
+  .object({
+    type: z.literal("auth"),
+    token: z.string(),
+  })
+  .readonly();
+
+export type AuthMsg = z.infer<typeof AuthMsgSchema>;
+
+export const AuthResultMsgSchema = z
+  .object({
+    type: z.literal("authResult"),
+    success: z.boolean(),
+    issue: z.enum(["invalidToken", "permissionDenied"]).optional(),
+
+    /** Only present if success */
+    authz: z.enum(["read", "write"]).optional(),
+    user: UserInfoSchema.optional().readonly(),
+  })
+  .readonly();
+
+export type AuthResultMsg = z.infer<typeof AuthResultMsgSchema>;
+
+const ErrorMsgSchema = z
+  .object({
+    type: z.literal("error"),
+    error: z.literal("no-write-permission"),
+  })
+  .readonly();
+
+export type ErrorMsg = z.infer<typeof ErrorMsgSchema>;
+
+export const MsgSchema = z.union([
+  AuthMsgSchema,
+  AuthResultMsgSchema,
+  UpdateMsgSchema,
+  ServerUpdateMsgSchema,
+  ErrorMsgSchema,
+]);
+
+export type Msg = z.infer<typeof MsgSchema>;

@@ -1,21 +1,12 @@
 import { Logger, NoopLogger } from "./Logger.ts";
+import { Changeset } from "./Msg.ts";
 import compareStrings from "./compareStrings.ts";
 import { fracIdxBetween } from "./fracIdx.ts";
 
+export type { Changeset } from "./Msg.ts";
+
 // Note this algorithm relies on the fact that JavaScript maps preserve
 // insertion order.
-
-export interface Changeset {
-  schema: 0;
-  /** obj */
-  create?: string[];
-  /** obj */
-  delete?: string[];
-  /** [obj, key, value] */
-  property?: [string, string, unknown][];
-  /** [child, parent, idx] */
-  position?: [string, string, string][];
-}
 
 export function combineChangesets(a: Changeset, b: Changeset): Changeset {
   if (a.schema !== 0 || b.schema !== 0) throw new Error("Invalid schema");
