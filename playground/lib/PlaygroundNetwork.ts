@@ -8,8 +8,6 @@ export interface CircuitStatus {
   disabled: boolean;
 }
 
-// TODO: Interrupt then disable then enable doesn't properly reconnect
-
 export class PlaygroundNetwork {
   private _onChange = new Set<() => void>();
   private _c = new Map<string, Circuit>();
