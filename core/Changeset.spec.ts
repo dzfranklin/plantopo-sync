@@ -288,6 +288,28 @@ Deno.test("position changes applied in order", async (t) => {
 });
 
 Deno.test(
+  "fixes idx in create position",
+  createTest({
+    authoritativeOnly: true,
+    base: {
+      create: ["N1"],
+      position: [["N1", "root", "A"]],
+    },
+    change: {
+      create: ["N2"],
+      position: [["N2", "root", "A"]],
+    },
+    expected: {
+      create: ["N1", "N2"],
+      position: [
+        ["N1", "root", "A"],
+        ["N2", "root", withZeroRng(() => fracIdxBetween("A", ""))],
+      ],
+    },
+  })
+);
+
+Deno.test(
   "deletes recursively",
   createTest({
     base: {

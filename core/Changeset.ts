@@ -210,7 +210,7 @@ export class WorkingChangeset {
       }
     }
     this._create.set(obj, meta);
-    this._position.set(obj, [parent, idx, meta]);
+    this._setPosition(obj, parent, idx, meta, authoritative);
   }
 
   private _setDelete(obj: string, meta: number = 0) {
