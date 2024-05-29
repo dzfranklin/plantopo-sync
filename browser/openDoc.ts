@@ -74,6 +74,9 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
       l.warn("timeout waiting for auth response");
       transport.close();
       return { type: "error" };
+    } else if (resp.type === "error") {
+      l.warn("auth error", { error: resp.error });
+      return { type: "error" };
     } else if (resp.type !== "authResult") {
       l.warn("expected authResult", { msg: resp });
       return { type: "error" };

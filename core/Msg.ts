@@ -75,7 +75,7 @@ export type AuthResultMsg = z.infer<typeof AuthResultMsgSchema>;
 const ErrorMsgSchema = z
   .object({
     type: z.literal("error"),
-    error: z.literal("no-write-permission"),
+    error: z.enum(["no-write-permission", "doc-not-found"]),
   })
   .readonly();
 

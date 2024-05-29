@@ -118,7 +118,11 @@ export default function handleDocWS({
     const doc = await docManager.get(docId);
     if (!doc) {
       log.info("doc not found", { docId });
-      // just have the client retry, this should fail authz next time
+      // Have the client retry, this should fail authz next time
+      transport.send({
+        type: "error",
+        error: "doc-not-found",
+      });
       return response;
     }
 
