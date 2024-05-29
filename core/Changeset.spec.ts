@@ -410,3 +410,16 @@ Deno.test(
     },
   })
 );
+
+Deno.test(
+  "accepts property on root",
+  createTest({
+    base: {},
+    change: {
+      property: [["root", "foo", "bar"]],
+    },
+    expected: {
+      property: [["root", "foo", "bar"]],
+    },
+  })
+);

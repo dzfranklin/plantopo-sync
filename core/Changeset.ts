@@ -237,7 +237,7 @@ export class WorkingChangeset {
     authoritative: boolean
   ) {
     if (authoritative) {
-      if (!this._create.has(obj)) {
+      if (obj !== "root" && !this._create.has(obj)) {
         this._l.debug("setProperty: nonexistent obj", { obj });
         return;
       }
