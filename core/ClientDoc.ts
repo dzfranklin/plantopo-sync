@@ -24,9 +24,6 @@ const backoffMaxMs = 5 * 60 * 1000; // 5 minutes
 // TODO: Handle errors that need to be recovered at a higher level like invalid
 // token
 
-// TODO: There is an intermittent bug that leads to a silent failure to connect when the
-// page is loaded just as the server is starting
-
 export interface ClientDocStatus {
   loaded: boolean;
   connected: boolean;
