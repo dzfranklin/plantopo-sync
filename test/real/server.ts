@@ -38,7 +38,10 @@ const docs = new DocManager({
   logger: log.Logger,
 });
 
-const tracer = await Tracer.open(stateDir);
+let tracer: Tracer | undefined;
+if (args.trace) {
+  tracer = await Tracer.open(stateDir);
+}
 
 const handlerConfig: HandlerConfig = {
   doc: {
@@ -81,8 +84,10 @@ Deno.addSignalListener("SIGINT", async () => {
 
   await server.shutdown();
 
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  await tracer.close();
+  if (tracer) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await tracer.close();
+  }
 
   console.log("Shut down server");
 

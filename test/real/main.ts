@@ -167,6 +167,7 @@ const server = new Handle("server.ts", 0, [
   caseConfig.probability_auth_issue,
   "--seed",
   caseConfig.seed,
+  ...[args.trace ? ["--trace"] : []],
 ]);
 
 const beforeServerUp = Date.now();
@@ -231,6 +232,9 @@ try {
 } finally {
   disableRegularLogs = true;
 
+  if (inspectServer) {
+    prompt("Press enter to quit");
+  }
   await server.quit();
 
   console.log("Trace written to ", stateDir + "/trace.db");
@@ -238,10 +242,6 @@ try {
 
   const elapsedS = (Date.now() - start) / 1000;
   console.log(`Took ${elapsedS}s`);
-
-  if (inspectServer) {
-    prompt("Press enter to quit");
-  }
 
   for (const client of clients) {
     client.quit();
