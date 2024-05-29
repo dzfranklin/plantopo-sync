@@ -27,7 +27,7 @@ const docPath = mustEnv("DOC_PATH");
 // Setup logging
 log.setup({
   handlers: {
-    console: new ConsoleHandler("DEBUG", {
+    console: new ConsoleHandler("INFO", {
       formatter: (logRecord) => {
         const { levelName, msg, args } = logRecord;
         return `${levelName} ${msg} ${JSON.stringify(args)}`;
@@ -36,7 +36,7 @@ log.setup({
   },
   loggers: {
     default: {
-      level: "DEBUG",
+      level: "INFO",
       handlers: ["console"],
     },
   },

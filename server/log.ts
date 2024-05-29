@@ -1,7 +1,7 @@
 import { debug, info, warn, error, critical, setup } from "std/log/mod.ts";
 import { Logger as ILogger } from "../core/index.ts";
 
-class DenoLogger implements ILogger {
+export class DenoLogger implements ILogger {
   constructor(private readonly props: Record<string, unknown>) {}
 
   debug(msg: string, props?: Record<string, unknown>): void {

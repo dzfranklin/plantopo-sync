@@ -42,6 +42,8 @@ export default function mux(
         return docHandler(req, info, url);
       case "/v1/create":
         return createHandler(req, info, url);
+      case "/health":
+        return Promise.resolve(new Response("OK", { status: 200 }));
       case "/metrics":
         return handleMetrics(req, info, url);
       default:

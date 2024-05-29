@@ -21,7 +21,8 @@ const nonexistentDocCounter = new prom.Counter({
 
 export class DocDB implements ServerDocPersistence {
   static async open(config: { path: string }): Promise<DocDB> {
-    const kv = await Deno.openKv(config.path);
+    await Deno.mkdir(config.path, { recursive: true });
+    const kv = await Deno.openKv(config.path + "/docdb");
     return new DocDB(kv);
   }
 

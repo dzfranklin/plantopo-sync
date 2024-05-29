@@ -11,10 +11,6 @@ export class Random {
     return new Random(new PGCSource(1, seed, 1, 1));
   }
 
-  static seed(seed: number): void {
-    global = Random.withSeed(seed);
-  }
-
   /** Generates a random integer r where min <= r < max */
   int(min: number, max: number): number {
     return min + this._bounded(max - min);
@@ -61,6 +57,14 @@ export class Random {
     return global.ulid();
   }
 
+  of<T>(array: T[]): T {
+    return array[this.int(0, array.length)];
+  }
+
+  static of<T>(array: T[]): T {
+    return global.of(array);
+  }
+
   // Generate a uniformly distributed number, r, where 0 <= r < bound
   private _bounded(bound: number): number {
     // Adapted from <https://github.com/imneme/pcg-c-basic/blob/bc39cd76ac3d541e618606bcc6e1e5ba5e5e6aa3/pcg_basic.c>
@@ -81,6 +85,10 @@ export class Random {
       const r = this.source.next32();
       if (r >= threshold) return r % bound;
     }
+  }
+
+  static __debugSetGlobal(source: RandomSource) {
+    global = new Random(source);
   }
 }
 

@@ -4,8 +4,9 @@ import {
   wsTransport,
   Transport,
   ConsoleLogger,
-} from "../core/index";
-import { Doc, Logger } from "./index";
+  ClientDocPersistence,
+} from "../core/index.ts";
+import { Doc, Logger } from "./index.ts";
 
 // TODO: debug expected authResult and instead got serverUpdate around 10% of the time with 10ms latency
 
@@ -14,7 +15,7 @@ export function openDoc(config: OpenDocConfig, docId: string): Doc {
     "c:" + Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
 
   // TODO: Use indexeddb
-  const persistence = new InMemoryClientDocPersistence();
+  const persistence = config.persistence ?? new InMemoryClientDocPersistence();
 
   return new Doc({
     clientId,
@@ -30,6 +31,7 @@ export interface OpenDocConfig {
   token: string;
   logger?: Logger;
   extraParams?: Record<string, string>;
+  persistence?: ClientDocPersistence;
 }
 
 function wsConnecter(config: OpenDocConfig): TransportConnecter {
@@ -80,7 +82,7 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
       return { type: "error" };
     }
 
-    l.info("authenticated", { user: resp?.user?.id });
+    l.info("authenticated", { user: resp.user?.id, authz: resp.authz });
 
     return { type: "ready", transport };
   };

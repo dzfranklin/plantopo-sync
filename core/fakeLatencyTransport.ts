@@ -1,32 +1,49 @@
 import { Clock } from "./Clock.ts";
-import { Random } from "./Random/mod.ts";
 import { Transport } from "./Transport.ts";
+import { Channel, Msg, Random } from "./index.ts";
 
 export function fakeLatencyTransport(
   transport: Transport,
   latencyMs: number
 ): Transport {
-  const randomDelay = () => Random.normal() * latencyMs;
+  let closed = false;
+  const rxQueue = new Channel<Readonly<Msg> | null>();
+  (async () => {
+    while (!closed) {
+      const msg = await transport.recv();
+      if (!closed) {
+        await Clock.wait(latencyMs * Random.normal());
+      }
+      rxQueue.send(msg);
+      if (msg === null) {
+        return;
+      }
+    }
+  })();
+
+  const txQueue = new Channel<Msg | null>();
+  (async () => {
+    while (!closed) {
+      const msg = await txQueue.recv();
+      if (!closed) {
+        await Clock.wait(latencyMs * Random.normal());
+      }
+      if (msg === null) {
+        transport.close();
+        return;
+      }
+      transport.send(msg);
+    }
+  })();
+
   return {
-    send: (msg) => {
-      Clock.timeout(() => transport.send(msg), randomDelay());
+    recv: () => rxQueue.recv(),
+    recvTimeout: (ms) => rxQueue.recvTimeout(ms),
+    send: (msg) => txQueue.send(msg),
+    close: () => {
+      closed = true;
+      rxQueue.send(null);
+      txQueue.send(null);
     },
-    close: () => transport.close(),
-    recv: () =>
-      new Promise((resolve) => {
-        Clock.timeout(() => resolve(transport.recv()), randomDelay());
-      }),
-    recvTimeout: (timeoutMs) =>
-      new Promise((resolve) => {
-        const delay = randomDelay();
-        if (delay > timeoutMs) {
-          Clock.timeout(() => resolve(undefined), timeoutMs);
-        } else {
-          Clock.timeout(
-            () => resolve(transport.recvTimeout(timeoutMs - delay)),
-            delay
-          );
-        }
-      }),
   };
 }

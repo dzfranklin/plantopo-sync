@@ -19,7 +19,7 @@ export function wsTransport(
           // TODO: validate
           inbound.send(msg);
         } catch (e) {
-          logger.error("Failed to parse message", { error: e });
+          logger.error("Failed to parse message", { error: e.message });
           socket.close();
         }
       });
@@ -31,7 +31,7 @@ export function wsTransport(
       resolve({
         send: (msg) => {
           if (socket.readyState !== WebSocket.OPEN) {
-            logger.info("WebSocket not open, dropping message", {
+            logger.debug("WebSocket not open, dropping message", {
               type: msg?.type,
             });
             return;

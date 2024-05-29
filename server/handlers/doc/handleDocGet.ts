@@ -36,11 +36,13 @@ export default function handleDocGet({
     const doc = await docManager.get(docId);
     if (!doc) return errorResponse(404, "doc not found");
 
-    const value = doc.collect();
+    const collected = doc.collect();
+    const changeset = doc.asChangeset();
 
     return new Response(
       JSON.stringify({
-        doc: value,
+        doc: collected,
+        changeset,
       }),
       {
         headers: {

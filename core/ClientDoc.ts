@@ -29,16 +29,22 @@ const backoffMaxMs = 5 * 60 * 1000; // 5 minutes
 
 export interface ClientDocStatus {
   loaded: boolean;
+  connected: boolean;
   unsyncedChanges: number;
 }
 
 const initialClientDocStatus: ClientDocStatus = {
   loaded: false,
+  connected: false,
   unsyncedChanges: 0,
 };
 
 function clientDocStatusEqual(a: ClientDocStatus, b: ClientDocStatus): boolean {
-  return a.unsyncedChanges === b.unsyncedChanges;
+  return (
+    a.loaded === b.loaded &&
+    a.connected === b.connected &&
+    a.unsyncedChanges === b.unsyncedChanges
+  );
 }
 
 export class ClientDoc {
@@ -205,13 +211,14 @@ export class ClientDoc {
     this._change({ property: [[node, key, value]] });
   }
 
-  add(position: InsertPosition) {
+  add(position: InsertPosition): string {
     this._node++;
     const id = `oid:${this.clientId}:${this._node}`;
     this._change({
       create: [id],
       position: [[id, ...this._resolveInsertPosition(position)]],
     });
+    return id;
   }
 
   move(node: string, position: InsertPosition) {
@@ -240,14 +247,21 @@ export class ClientDoc {
     this._t = { type: "ready", t };
     this._connectTick = this._lastTick;
     this._lastRxTick = 0;
+    this._update();
 
     const recvLoop = async () => {
       let hasUpdate = false;
       while (!this._closed) {
         const msg = await t.recv();
         if (!msg) {
-          this._l.info("transport closed");
+          this._l.info("disconnected");
           break;
+        }
+
+        if (msg.type === "error") {
+          this._l.error("received error", { error: msg.error });
+          t.close();
+          continue;
         }
 
         if (msg.type === "serverUpdate") {
@@ -259,6 +273,7 @@ export class ClientDoc {
               this._l.info("clearing connect failures: got update");
               this._connectFailures = 0;
             }
+            this._l.info("connected");
           }
         }
       }
@@ -397,9 +412,11 @@ export class ClientDoc {
 
     const status: ClientDocStatus = {
       loaded: this._initialTransportLoaded || this._persistenceLoaded,
+      connected: this._t.type === "ready",
       unsyncedChanges: this._changes.size(),
     };
     if (!clientDocStatusEqual(this._status, status)) {
+      this._l.debug("status change", { status });
       this._status = status;
       this._onStatusChange.forEach((cb) => cb(status));
     }

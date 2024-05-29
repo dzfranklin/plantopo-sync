@@ -134,6 +134,7 @@ export class ServerDoc {
     // send intro
     client.t.send({
       type: "serverUpdate",
+      seq: this._seq,
       clients,
       changeset: this._data.collect(),
     });
@@ -141,6 +142,7 @@ export class ServerDoc {
     // broadcast
     const broadcast = {
       type: "serverUpdate",
+      seq: this._seq,
       clients,
     } as const;
     for (const other of this._c.values()) {
@@ -156,6 +158,10 @@ export class ServerDoc {
   onChange(cb: (this: ServerDoc) => void): () => void {
     this._onChange.add(cb);
     return () => this._onChange.delete(cb);
+  }
+
+  asChangeset(): Changeset {
+    return this._data.collect();
   }
 
   collect(): DocTree {
@@ -186,6 +192,10 @@ export class ServerDoc {
           this._l.warn("Received changeset without seq", { clientId });
         }
 
+        if (client.authz !== "write") {
+          client.t.send({ type: "error", error: "no-write-permission" });
+        }
+
         // update internal state
         const prevSeq = this._seq;
         this._seq++;
@@ -206,6 +216,7 @@ export class ServerDoc {
 
       const broadcastMsg = {
         type: "serverUpdate",
+        seq: this._seq,
         clients,
         changeset: updates,
       } as const;

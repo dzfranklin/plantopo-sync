@@ -15,6 +15,10 @@ export const Clock = {
     global.cancelTimeout(timeout);
   },
 
+  wait(ms: number): Promise<void> {
+    return new Promise((resolve) => global.timeout(resolve, ms));
+  },
+
   /** Schedule a callback to be called every interval milliseconds */
   interval(cb: () => void, interval: number): number {
     return global.interval(cb, interval);
@@ -24,7 +28,11 @@ export const Clock = {
     global.cancelInterval(interval);
   },
 
-  __debugSetGlobalClockSource(clock: ClockSource) {
+  __debugGetGlobal(): ClockSource {
+    return global;
+  },
+
+  __debugSetGlobal(clock: ClockSource) {
     global = clock;
   },
 };

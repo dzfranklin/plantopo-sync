@@ -5,7 +5,7 @@ import * as prom from "prom-client/";
 import { wsTransport } from "../../../core/wsTransport.ts";
 import { errorResponse } from "../helpers.ts";
 import { fakeLatencyTransport } from "../../../core/fakeLatencyTransport.ts";
-import { Random } from "../../../core/index.ts";
+import { Msg, Random, Transport } from "../../../core/index.ts";
 
 const activeRequestsGauge = new prom.Gauge({
   name: "doc_ws_active_requests",
@@ -48,6 +48,8 @@ export default function handleDocWS({
 
     const clientId = "sid:" + Random.ulid();
 
+    const l = log.Logger.child({ docId, clientId, fakeLatency });
+
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     log.info("WebSocket connection", {
@@ -63,7 +65,16 @@ export default function handleDocWS({
       activeRequestsGauge.dec();
     });
 
-    let transport = await wsTransport(socket, log.Logger);
+    let transport: Transport<Msg | null>;
+    try {
+      transport = await wsTransport(socket, l);
+    } catch (e) {
+      // If the server is overloaded this can give "Failed to open WebSocket".
+      // This way we ensure we return the response and thus prevent the server
+      // from crashing. See <https://github.com/denoland/deno/issues/22333>
+      console.log("WebSocket transport error", e);
+      return response;
+    }
 
     if (fakeLatency !== null) {
       transport = fakeLatencyTransport(transport, fakeLatency);
@@ -117,6 +128,7 @@ export default function handleDocWS({
       type: "authResult",
       success: true,
       user,
+      authz,
     });
 
     doc.connect(
