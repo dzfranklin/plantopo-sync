@@ -55,32 +55,6 @@ let timings = new Map<string, number>();
 
 const stateDir = await Deno.makeTempDir();
 
-const server = new Handle("server.ts", 0, [
-  "--stateDir",
-  stateDir,
-  "--port",
-  serverPort,
-  "--probabilityAuthIssue",
-  caseConfig.probability_auth_issue,
-]);
-
-const beforeServerUp = Date.now();
-while (true) {
-  try {
-    const resp = await fetch(`http://localhost:${serverPort}/health`);
-    if (resp.status === 200) {
-      break;
-    }
-  } catch (e) {}
-  await sleep(25);
-}
-timings.set("serverUp", (Date.now() - beforeServerUp) / 1000);
-
-if (inspectServer) {
-  await sleep(1000);
-  prompt("Press enter to continue");
-}
-
 const clients = new Array(caseConfig.clients)
   .fill(null)
   .map(
@@ -126,53 +100,123 @@ const doLog = (msg: any) => {
 const states = new Array(clients.length).fill(undefined);
 const connected = new Array(clients.length).fill(false);
 
-Promise.all([
-  new Promise<void>(async (resolve) => {
-    for await (const { line, handle } of server.out) {
-      let msg: any;
-      try {
-        msg = { ...JSON.parse(line), handle };
-      } catch (e) {
-        doLog({ handle, log: { level: "PASSTHROUGH", message: line } });
-        continue;
-      }
-      switch (msg.type) {
-        case "log":
-          doLog(msg);
-          break;
-      }
-    }
-    resolve();
-  }),
-  ...clients.map(
-    (client) =>
-      new Promise<void>(async (resolve) => {
-        for await (const { line, handle } of client.out) {
-          let msg: any;
-          try {
-            msg = { ...JSON.parse(line), handle };
-          } catch (e) {
-            doLog({ handle, log: { level: "PASSTHROUGH", message: line } });
-            continue;
-          }
-          switch (msg.type) {
-            case "log":
-              doLog(msg);
-              break;
-            case "inspectResult":
-              const id = msg.handle[1];
-              if (!(typeof id === "number") || id < 0 || id >= states.length) {
-                throw new Error("invalid handle");
-              }
-              states[id] = msg.persisted;
-              connected[id] = msg.status.connected;
-              break;
-          }
-        }
-        resolve();
-      })
-  ),
+for (const client of clients) {
+  client.send({
+    type: "call",
+    method: "add",
+    args: [{ type: "firstChild", parent: "root" }],
+  });
+}
+
+const server = new Handle("server.ts", 0, [
+  "--stateDir",
+  stateDir,
+  "--port",
+  serverPort,
+  "--probabilityAuthIssue",
+  caseConfig.probability_auth_issue,
 ]);
+
+const beforeServerUp = Date.now();
+while (true) {
+  try {
+    const resp = await fetch(`http://localhost:${serverPort}/health`);
+    if (resp.status === 200) {
+      break;
+    }
+  } catch (e) {}
+  await sleep(25);
+}
+timings.set("serverUp", (Date.now() - beforeServerUp) / 1000);
+
+if (inspectServer) {
+  await sleep(1000);
+  prompt("Press enter to continue");
+}
+
+spawnGlobalStateUpdater();
+
+const beforeConnect = Date.now();
+await waitForAllConnected();
+timings.set("connect", (Date.now() - beforeConnect) / 1000);
+
+const beforeConverge = Date.now();
+await waitForAll((s) => s?.base?.create?.length === clients.length);
+await assertConverged();
+timings.set("converge", (Date.now() - beforeConverge) / 1000);
+
+console.log("Timings", timings);
+
+const elapsedS = (Date.now() - start) / 1000;
+console.log(`All checks passed in ${elapsedS}s!`);
+
+if (inspectServer) {
+  prompt("Press enter to quit");
+}
+
+server.kill();
+for (const client of clients) {
+  client.kill();
+}
+Deno.exit(0);
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function spawnGlobalStateUpdater() {
+  Promise.all([
+    new Promise<void>(async (resolve) => {
+      for await (const { line, handle } of server.out) {
+        let msg: any;
+        try {
+          msg = { ...JSON.parse(line), handle };
+        } catch (e) {
+          doLog({ handle, log: { level: "PASSTHROUGH", message: line } });
+          continue;
+        }
+        switch (msg.type) {
+          case "log":
+            doLog(msg);
+            break;
+        }
+      }
+      resolve();
+    }),
+    ...clients.map(
+      (client) =>
+        new Promise<void>(async (resolve) => {
+          for await (const { line, handle } of client.out) {
+            let msg: any;
+            try {
+              msg = { ...JSON.parse(line), handle };
+            } catch (e) {
+              doLog({ handle, log: { level: "PASSTHROUGH", message: line } });
+              continue;
+            }
+            switch (msg.type) {
+              case "log":
+                doLog(msg);
+                break;
+              case "inspectResult":
+                const id = msg.handle[1];
+                if (
+                  !(typeof id === "number") ||
+                  id < 0 ||
+                  id >= states.length
+                ) {
+                  throw new Error("invalid handle");
+                }
+                states[id] = msg.persisted;
+                connected[id] = msg.status.connected;
+                break;
+            }
+          }
+          resolve();
+        })
+    ),
+  ]);
+}
 
 async function inspectAll() {
   for (const i in states) {
@@ -275,54 +319,4 @@ async function assertConverged() {
   throw new AssertionError(
     `${different.length} / ${clients.length} incorrect, ${bySer.size} different incorrect states. Wrote to ./incorrect/`
   );
-}
-
-const beforeConnect = Date.now();
-await waitForAllConnected();
-timings.set("connect", (Date.now() - beforeConnect) / 1000);
-
-for (const i in states) {
-  if (states[i] === null) {
-    continue;
-  }
-  assertEquals(
-    states[i],
-    {
-      base: { schema: 0 },
-      changes: { schema: 0 },
-    },
-    `state[${i}] === empty`
-  );
-}
-
-for (const client of clients) {
-  client.send({
-    type: "call",
-    method: "add",
-    args: [{ type: "firstChild", parent: "root" }],
-  });
-}
-
-const beforeConverge = Date.now();
-await waitForAll((s) => s?.base?.create?.length === clients.length);
-await assertConverged();
-timings.set("converge", (Date.now() - beforeConverge) / 1000);
-
-console.log("Timings", timings);
-
-const elapsedS = (Date.now() - start) / 1000;
-console.log(`All checks passed in ${elapsedS}s!`);
-
-if (inspectServer) {
-  prompt("Press enter to quit");
-}
-
-server.kill();
-for (const client of clients) {
-  client.kill();
-}
-Deno.exit(0);
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
