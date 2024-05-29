@@ -5,6 +5,7 @@ import { setupLogs, logger } from "../setupLogs.ts";
 import { openDoc } from "../../browser/openDoc.ts";
 import { TextLineStream } from "jsr:@std/streams@0.223.0/text-line-stream";
 import { JsonParseStream } from "jsr:@std/json@0.223.0/json-parse-stream";
+import { ClientDocSaveSchema } from "../../core/DocPersistence.ts";
 
 setupLogs();
 
@@ -20,7 +21,9 @@ if (isNaN(id)) {
 
 const disableFakeLatency = !!args.disableFakeLatency;
 
-const initialState = JSON.parse(args.initialState || "null");
+const initialState = ClientDocSaveSchema.nullable().parse(
+  JSON.parse(args.initialState)
+);
 
 const rng = new PGCSource(0, 42 + id, 0, 54);
 Random.__debugSetGlobal(rng);

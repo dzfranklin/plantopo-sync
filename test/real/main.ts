@@ -11,6 +11,7 @@ import { AssertionError } from "std/assert/assertion_error.ts";
 import { equal } from "std/assert/equal.ts";
 import { Handle } from "./Handle.ts";
 import { logLevelFromEnv } from "../setupLogs.ts";
+import { DocGetResponse } from "../../server/handlers/doc/handleDocGet.ts";
 
 const start = Date.now();
 
@@ -55,18 +56,27 @@ let timings = new Map<string, number>();
 
 const stateDir = await Deno.makeTempDir();
 
-const clients = new Array(caseConfig.clients)
-  .fill(null)
-  .map(
-    (_, i) =>
-      new Handle("client.ts", i, [
-        "--serverPort",
-        serverPort,
-        "--id",
-        i.toString(),
-        ...(caseConfig.disable_fake_latency ? ["--disableFakeLatency"] : []),
-      ])
-  );
+const clients = new Array(caseConfig.clients).fill(null).map(
+  (_, i) =>
+    new Handle("client.ts", i, [
+      "--serverPort",
+      serverPort,
+      "--id",
+      i.toString(),
+      ...(caseConfig.disable_fake_latency ? ["--disableFakeLatency"] : []),
+      "--initialState",
+      JSON.stringify(
+        i === 0
+          ? {
+              changes: {
+                schema: 0,
+                property: [["root", "unsynced-in-initial-0", 42]],
+              },
+            }
+          : null
+      ),
+    ])
+);
 console.log("Initialized clients");
 
 const doLog = (msg: any) => {
@@ -144,6 +154,26 @@ const beforeConverge = Date.now();
 await waitForAll((s) => s?.base?.create?.length === clients.length);
 await assertConverged();
 timings.set("converge", (Date.now() - beforeConverge) / 1000);
+
+// Check final state
+
+const finalServerState = await fetchServerState();
+
+if (clients.length > 0) {
+  assertEquals(finalServerState.doc.props, {
+    "unsynced-in-initial-0": 42,
+  });
+}
+
+const indices = new Set();
+for (const node of finalServerState.doc.children) {
+  if (indices.has(node.idx)) {
+    throw new Error("duplicate index");
+  }
+  indices.add(node.idx);
+}
+
+// Done with checks
 
 console.log("Timings", timings);
 
@@ -262,8 +292,7 @@ async function waitForAllConnected() {
   console.log("All connected");
 }
 
-async function assertConverged() {
-  let serverState: any;
+async function fetchServerState(): Promise<DocGetResponse> {
   while (true) {
     const resp = await fetch(
       `http://localhost:${serverPort}/v1/doc?docId=doc`,
@@ -278,9 +307,13 @@ async function assertConverged() {
       await sleep(100);
       continue;
     }
-    serverState = (await resp.json()).changeset;
+    return await resp.json();
     break;
   }
+}
+
+async function assertConverged() {
+  let serverState = (await fetchServerState()).changeset;
 
   const clientBases = states.map((s) => s.base);
 
