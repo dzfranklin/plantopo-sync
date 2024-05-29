@@ -182,7 +182,10 @@ export class ServerDoc {
       const { clientId, msg } = recv;
 
       const client = this._c.get(clientId);
-      if (!client) return;
+      if (!client) {
+        this._l.debug("Received message from unknown client", { clientId });
+        continue;
+      }
 
       client.awareness = msg.awareness;
 
