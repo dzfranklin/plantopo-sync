@@ -22,7 +22,7 @@ const disableFakeLatency = !!args.disableFakeLatency;
 
 const initialState = JSON.parse(args.initialState || "null");
 
-const rng = new PGCSource(0, 42, 0, 54);
+const rng = new PGCSource(0, 42 + id, 0, 54);
 Random.__debugSetGlobal(rng);
 
 let persisted: ClientDocSave | null = initialState;
@@ -30,7 +30,7 @@ let persisted: ClientDocSave | null = initialState;
 const doc = openDoc(
   {
     endpoint: `ws://localhost:${serverPort}/v1`,
-    token: id.toString(),
+    acquireToken: () => Promise.resolve("token-" + id.toString()),
     logger,
     persistence: {
       load: async () => persisted,
