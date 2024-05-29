@@ -246,7 +246,7 @@ export class ClientDoc {
     const t = connectResult.transport;
     this._t = { type: "ready", t };
     this._connectTick = this._lastTick;
-    this._lastRxTick = 0;
+    this._lastRxTick = this._lastTick;
     this._update();
 
     const recvLoop = async () => {
