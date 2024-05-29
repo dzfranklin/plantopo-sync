@@ -229,6 +229,32 @@ Deno.test(
   })
 );
 
+Deno.test(
+  "does not fix conflicting idx in non-authoritative",
+  createTest({
+    nonAuthoritativeOnly: true,
+    base: {
+      create: ["N1", "N2", "N3"],
+      position: [
+        ["N1", "root", "A"],
+        ["N2", "root", "B"],
+        ["N3", "root", "O"],
+      ],
+    },
+    change: {
+      position: [["N2", "root", "A"]],
+    },
+    expected: {
+      create: ["N1", "N2", "N3"],
+      position: [
+        ["N1", "root", "A"],
+        ["N2", "root", "A"],
+        ["N3", "root", "O"],
+      ],
+    },
+  })
+);
+
 Deno.test("position changes applied in order", async (t) => {
   const base: Changeset = {
     schema: 0,
