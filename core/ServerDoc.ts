@@ -138,14 +138,13 @@ export class ServerDoc {
     });
 
     // broadcast
-    const broadcast = {
-      type: "serverUpdate",
-      seq: this._seq,
-      clients,
-    } as const;
     for (const other of this._c.values()) {
       if (other.id === client.id) continue;
-      other.t.send(broadcast);
+      other.t.send({
+        type: "serverUpdate",
+        seq: this._seq,
+        clients: clients.filter((c) => c.id !== other.id),
+      });
     }
   }
 
@@ -218,13 +217,13 @@ export class ServerDoc {
       const broadcastMsg = {
         type: "serverUpdate",
         seq: this._seq,
-        clients,
         changeset: updates,
       } as const;
 
       const replyMsg = {
         ...broadcastMsg,
         replyTo: msg.seq,
+        clients: clients.filter((c) => c.id !== clientId),
       } as const;
 
       // reply
@@ -233,7 +232,10 @@ export class ServerDoc {
       // broadcast
       for (const other of this._c.values()) {
         if (other.id === clientId) continue;
-        other.t.send(broadcastMsg);
+        other.t.send({
+          ...broadcastMsg,
+          clients: clients.filter((c) => c.id !== other.id),
+        });
       }
 
       this._triggerOnChange();

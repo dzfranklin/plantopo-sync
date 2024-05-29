@@ -42,8 +42,9 @@ function clientDocStatusEqual(a: ClientDocStatus, b: ClientDocStatus): boolean {
 }
 
 export class ClientDoc {
-  readonly clientId: string;
   readonly docId: string;
+
+  private _nodeIDBase = "nid:" + Random.ulid();
 
   private _closed = false;
   private _persistenceLoaded = false;
@@ -86,18 +87,15 @@ export class ClientDoc {
   private _peers: ClientInfo[] = [];
 
   constructor(config: {
-    clientId: string;
     docId: string;
     logger?: Logger;
     transport: TransportConnecter;
     persistence: ClientDocPersistence;
   }) {
-    this.clientId = config.clientId;
     this.docId = config.docId;
 
     this._l = (config.logger || new ConsoleLogger()).child({
       doc: this.docId,
-      client: this.clientId,
     });
 
     this._persistence = config.persistence;
@@ -206,8 +204,7 @@ export class ClientDoc {
   }
 
   add(position: InsertPosition): string {
-    this._node++;
-    const id = `oid:${this.clientId}:${this._node}`;
+    const id = this._generateNodeId();
     this._change({
       create: [id],
       position: [[id, ...this._resolveInsertPosition(position)]],
@@ -363,10 +360,7 @@ export class ClientDoc {
 
     this._peers = [];
     for (const client of msg.clients) {
-      // TODO: These are different kinds of ids now.
-      // if (client.id !== this.clientId) {
       this._peers.push(client);
-      // }
     }
 
     this._update();
@@ -418,6 +412,11 @@ export class ClientDoc {
 
   private _resolveInsertPosition(position: InsertPosition): [string, string] {
     return resolveInsertPosition(this._l, this._tree, position);
+  }
+
+  private _generateNodeId(): string {
+    this._node++;
+    return this._nodeIDBase + "." + this._node.toString(36).toUpperCase();
   }
 }
 

@@ -168,14 +168,12 @@ async function createActors(prev?: Actors): Promise<Actors> {
   }
 
   const clientA = new ClientDoc({
-    clientId: "clientA",
     docId: "doc1",
     transport: network.connecter("A"),
     logger: logs.logger("ClientADoc"),
     persistence: aPersistence,
   });
   const clientB = new ClientDoc({
-    clientId: "clientB",
     docId: "doc1",
     transport: network.connecter("B"),
     logger: logs.logger("ClientBDoc"),

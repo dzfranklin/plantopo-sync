@@ -36,7 +36,7 @@ function NodeComponent({
       <div className="max-w-72 text-sm border border-gray-400 rounded p-2 mb-2">
         <details className="w-full max-w-full overflow-hidden">
           <summary>
-            <span>{node.id}</span>
+            <span className="text-xs">{node.id}</span>
           </summary>
 
           <ul>

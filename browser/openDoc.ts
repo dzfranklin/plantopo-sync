@@ -9,14 +9,10 @@ import {
 import { Doc, Logger } from "./index.ts";
 
 export function openDoc(config: OpenDocConfig, docId: string): Doc {
-  const clientId =
-    "c:" + Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
-
   // TODO: Use indexeddb
   const persistence = config.persistence ?? new InMemoryClientDocPersistence();
 
   return new Doc({
-    clientId,
     docId,
     logger: config.logger,
     transport: wsConnecter(config),
