@@ -62,7 +62,7 @@ export const AuthResultMsgSchema = z
   .object({
     type: z.literal("authResult"),
     success: z.boolean(),
-    issue: z.enum(["invalidToken", "permissionDenied"]).optional(),
+    issue: z.enum(["invalid-token", "permission-denied"]).optional(),
 
     /** Only present if success */
     authz: z.enum(["read", "write"]).optional(),

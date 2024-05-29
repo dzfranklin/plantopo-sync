@@ -102,7 +102,7 @@ export default function handleDocWS({
       transport.send({
         type: "authResult",
         success: false,
-        issue: "invalidToken",
+        issue: "invalid-token",
       });
       authnRejectionsCounter.inc();
       return response;
@@ -115,7 +115,7 @@ export default function handleDocWS({
       transport.send({
         type: "authResult",
         success: false,
-        issue: "permissionDenied",
+        issue: "permission-denied",
       });
       authzRejectionsCounter.inc();
       return response;
