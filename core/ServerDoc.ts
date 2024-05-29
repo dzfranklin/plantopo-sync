@@ -8,8 +8,6 @@ import compareStrings from "./compareStrings.ts";
 import Channel from "./Channel.ts";
 import { UserInfo } from "./UserInfo.ts";
 
-// TODO: Reduce message amplification. Maybe move to a tick interval?
-
 // TODO: timeout clients
 
 // TODO: Add support for images and other external files to protocol

@@ -69,7 +69,8 @@ export class ClientDoc {
   private _persistence: ClientDocPersistence;
   private _onChange = new Set<() => void>();
   private _collector = new DocTreeCollector();
-  private _ticker: number;
+  private _preTicker: number | null;
+  private _ticker: number | null = null;
 
   private _status = initialClientDocStatus;
   private _onStatusChange = new Set<(status: ClientDocStatus) => void>();
@@ -139,7 +140,10 @@ export class ClientDoc {
         this._l.error("load from persistence", { err: err.toString() });
       });
 
-    this._ticker = Clock.interval(() => this._tick(), tickIntervalMs);
+    this._preTicker = Clock.timeout(() => {
+      this._preTicker = null;
+      this._ticker = Clock.interval(() => this._tick(), tickIntervalMs);
+    }, Random.float() * tickIntervalMs);
 
     this._connecter = config.transport;
     this.connect();
@@ -150,7 +154,8 @@ export class ClientDoc {
 
   close() {
     this._closed = true;
-    Clock.cancelInterval(this._ticker);
+    if (this._preTicker !== null) Clock.cancelTimeout(this._preTicker);
+    if (this._ticker !== null) Clock.cancelInterval(this._ticker);
     if (this._t.type === "ready") {
       this._t.t.close();
     }
