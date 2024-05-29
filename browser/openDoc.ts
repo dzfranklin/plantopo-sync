@@ -26,7 +26,7 @@ export function openDoc(config: OpenDocConfig, docId: string): Doc {
 
 export interface OpenDocConfig {
   endpoint: string;
-  token: string;
+  acquireToken: () => Promise<string>;
   logger?: Logger;
   extraParams?: Record<string, string>;
   persistence?: ClientDocPersistence;
@@ -36,6 +36,8 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
   const logger = config.logger || new ConsoleLogger();
   return async (docId) => {
     const l = logger.child({ docId });
+
+    const token = await config.acquireToken();
 
     const params = new URLSearchParams();
     params.set("docId", docId);
@@ -61,7 +63,7 @@ function wsConnecter(config: OpenDocConfig): TransportConnecter {
     l.info("authenticating");
     transport.send({
       type: "auth",
-      token: config.token,
+      token,
     });
 
     const resp = await transport.recvTimeout(10000);

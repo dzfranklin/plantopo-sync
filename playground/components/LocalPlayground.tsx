@@ -22,7 +22,7 @@ export default function LocalPlayground() {
   useEffect(() => {
     const config: OpenDocConfig = {
       endpoint: "ws://localhost:4032/v1",
-      token: "local-playground",
+      acquireToken: () => Promise.resolve("local-playground"),
       logger: logs.logger("doc"),
       extraParams: {
         _fakeLatency: latencyMs.toString(),

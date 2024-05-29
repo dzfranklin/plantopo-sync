@@ -21,9 +21,6 @@ const backoffIntervalMs = 50;
 const backoffRate = 2;
 const backoffMaxMs = 5 * 60 * 1000; // 5 minutes
 
-// TODO: Handle errors that need to be recovered at a higher level like invalid
-// token
-
 export interface ClientDocStatus {
   loaded: boolean;
   connected: boolean;
