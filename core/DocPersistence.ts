@@ -1,14 +1,18 @@
+import { z } from "zod/mod.ts";
 import { Changeset } from "./Changeset.ts";
+import { ChangesetSchema } from "./Msg.ts";
 
 export interface ServerDocPersistence {
   load(doc: string): Promise<Changeset | null>;
   save(doc: string, changeset: Changeset): Promise<void>;
 }
 
-export interface ClientDocSave {
-  base: Changeset;
-  changes: Changeset;
-}
+export const ClientDocSaveSchema = z.object({
+  base: ChangesetSchema.optional(),
+  changes: ChangesetSchema.optional(),
+});
+
+export type ClientDocSave = z.infer<typeof ClientDocSaveSchema>;
 
 export interface ClientDocPersistence {
   load(doc: string): Promise<ClientDocSave | null>;

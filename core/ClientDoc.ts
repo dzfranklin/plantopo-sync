@@ -6,6 +6,7 @@ import {
   Changeset,
   WorkingChangeset,
   changesetIsEmpty,
+  changesetSize,
   collectWorkingChangesets,
 } from "./Changeset.ts";
 import { InsertPosition, resolveInsertPosition } from "./InsertPosition.ts";
@@ -117,18 +118,25 @@ export class ClientDoc {
         }
 
         if (!this._initialTransportLoaded) {
-          this._l.info("persistence loaded before transport, using base");
-          this._base.clear();
-          this._base.change(save.base);
+          this._l.info("persistence loaded before transport");
+          if (save.base) {
+            this._l.info("loaded base from persistence");
+            this._base.clear();
+            save.base && this._base.change(save.base);
+          }
         }
 
-        this._changes.change(save.changes, this._seq);
-        this._l.info("loaded changes from persistence");
+        if (save.changes && !changesetIsEmpty(save.changes)) {
+          this._changes.change(save.changes, this._seq);
+          this._l.info("loaded changes from persistence", {
+            changesetSize: changesetSize(save.changes),
+          });
+        }
 
         this._update();
       })
       .catch((err) => {
-        this._l.error("load from persistence", { err });
+        this._l.error("load from persistence", { err: err.toString() });
       });
 
     this._ticker = Clock.interval(() => this._tick(), tickIntervalMs);
