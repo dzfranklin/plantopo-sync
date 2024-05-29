@@ -10,6 +10,8 @@ export type DocTree = {
   nodes: Record<string, DocNode>;
 };
 
+export type SerializedDocTree = Omit<DocTree, "nodes">;
+
 export interface DocNode {
   id: string;
   parent: string | null;

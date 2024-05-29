@@ -1,3 +1,5 @@
+import { Changeset } from "../../../core/Changeset.ts";
+import { SerializedDocTree } from "../../../core/DocTree.ts";
 import { bearerToken, errorResponse } from "../helpers.ts";
 import { Handler } from "../mux.ts";
 import { DocHandlerConfig } from "./muxDoc.ts";
@@ -7,6 +9,11 @@ const requestCounter = new prom.Counter({
   name: "doc_get_requests_total",
   help: "Total number of get requests for docs",
 });
+
+export interface DocGetResponse {
+  doc: SerializedDocTree;
+  changeset: Changeset;
+}
 
 export default function handleDocGet({
   authenticator,
@@ -39,16 +46,15 @@ export default function handleDocGet({
     const collected = doc.collect();
     const changeset = doc.asChangeset();
 
-    return new Response(
-      JSON.stringify({
-        doc: collected,
-        changeset,
-      }),
-      {
-        headers: {
-          "content-type": "application/json",
-        },
-      }
-    );
+    const resp: DocGetResponse = {
+      doc: collected,
+      changeset,
+    };
+
+    return new Response(JSON.stringify(resp), {
+      headers: {
+        "content-type": "application/json",
+      },
+    });
   };
 }
