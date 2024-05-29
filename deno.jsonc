@@ -1,6 +1,9 @@
 {
   "include": [
-    "./server"
+    "./core",
+    "./server",
+    "./tools",
+    "./test"
   ],
   "lint": {
     "include": [

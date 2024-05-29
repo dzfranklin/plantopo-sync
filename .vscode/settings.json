@@ -5,6 +5,7 @@
   "deno.enablePaths": [
     "./core",
     "./server",
+    "./test",
     "./tools"
   ],
   "deno.config": "./deno.jsonc",

@@ -12,7 +12,8 @@ test:
   tsc --build ./browser/tsconfig.json
 
 serve:
-  deno run --allow-all --unstable-kv ./server/main.ts
+  DOC_PATH="./server/.dev_db/serve" \
+    deno run --allow-all --unstable-kv ./server/main.ts
 
 live-playground:
   #!/usr/bin/env bash
