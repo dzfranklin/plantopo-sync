@@ -7,10 +7,10 @@ import { Transport } from "./Transport.ts";
 import compareStrings from "./compareStrings.ts";
 import Channel from "./Channel.ts";
 import { UserInfo } from "./UserInfo.ts";
+import { Clock } from "./Clock.ts";
 
-// TODO: timeout clients
-
-// TODO: Add support for images and other external files to protocol
+const sweepInterval = 10_000;
+const maxClientQuietPeriod = 30_000;
 
 export interface ServerDocConfig {
   persistence: ServerDocPersistence;
@@ -23,6 +23,8 @@ interface InternalClientInfo {
   authz: "read" | "write";
   user: UserInfo;
   awareness: Record<string, unknown>;
+  pendingReplySeq?: number;
+  lastRecvAt: number;
 }
 
 interface RecvEntry {
@@ -39,6 +41,7 @@ export class ServerDoc {
   private readonly _p: ServerDocPersistence;
   private _onChange = new Set<() => void>();
   private _c = new Map<string, InternalClientInfo>();
+  private _sweepInterval: number;
 
   private _recv = new Channel<RecvEntry>();
   private _recvDone: Promise<void>;
@@ -68,7 +71,15 @@ export class ServerDoc {
 
     this._data = new WorkingChangeset(initialState);
 
+    if (!changesetIsEmpty(initialState)) {
+      this._seq = 1;
+    }
+
     this._recvDone = this._doRecv();
+
+    this._sweepInterval = Clock.interval(() => {
+      this._sweep();
+    }, sweepInterval);
   }
 
   async close() {
@@ -78,6 +89,7 @@ export class ServerDoc {
       client.t.close();
     }
     await this._recvDone;
+    Clock.cancelInterval(this._sweepInterval);
     this._l.info("Doc closed");
     this._onClose.forEach((cb) => cb());
   }
@@ -109,6 +121,7 @@ export class ServerDoc {
       authz: config.authz,
       user: config.user,
       awareness: {},
+      lastRecvAt: Clock.now(),
     };
     this._c.set(clientId, client);
 
@@ -135,15 +148,7 @@ export class ServerDoc {
       changeset: this._data.collect(),
     });
 
-    // broadcast
-    for (const other of this._c.values()) {
-      if (other.id === client.id) continue;
-      other.t.send({
-        type: "serverUpdate",
-        seq: this._seq,
-        clients: clients.filter((c) => c.id !== other.id),
-      });
-    }
+    this._enqueueUpdate();
   }
 
   disconnect(client: string) {
@@ -183,6 +188,7 @@ export class ServerDoc {
       }
 
       client.awareness = msg.awareness;
+      client.lastRecvAt = Clock.now();
 
       let updates: Changeset | undefined;
       if (msg.changeset) {
@@ -195,6 +201,7 @@ export class ServerDoc {
         }
 
         // update internal state
+        client.pendingReplySeq = msg.seq;
         const prevSeq = this._seq;
         this._seq++;
         this._data.changeAuthoritative(msg.changeset, this._seq);
@@ -210,33 +217,17 @@ export class ServerDoc {
         await this._p.save(this.id, value);
       }
 
-      const clients = this.clients();
+      this._enqueueUpdate();
+    }
+  }
 
-      const broadcastMsg = {
-        type: "serverUpdate",
-        seq: this._seq,
-        changeset: updates,
-      } as const;
-
-      const replyMsg = {
-        ...broadcastMsg,
-        replyTo: msg.seq,
-        clients: clients.filter((c) => c.id !== clientId),
-      } as const;
-
-      // reply
-      client.t.send(replyMsg);
-
-      // broadcast
-      for (const other of this._c.values()) {
-        if (other.id === clientId) continue;
-        other.t.send({
-          ...broadcastMsg,
-          clients: clients.filter((c) => c.id !== other.id),
-        });
+  private _sweep() {
+    const now = Clock.now();
+    for (const client of this._c.values()) {
+      if (now - client.lastRecvAt > maxClientQuietPeriod) {
+        this._l.info("Timing out client", { clientId: client.id });
+        client.t.close();
       }
-
-      this._triggerOnChange();
     }
   }
 
@@ -248,7 +239,32 @@ export class ServerDoc {
     }
   }
 
-  private _triggerOnChange() {
-    this._onChange.forEach((cb) => cb());
+  private _nextUpdate: number | null = null;
+  private _lastUpdateSeq = 0;
+
+  private _enqueueUpdate() {
+    if (this._nextUpdate !== null) return;
+    this._nextUpdate = Clock.timeout(() => {
+      this._nextUpdate = null;
+      if (this._closed) return;
+      if (this._seq === this._lastUpdateSeq) return;
+
+      const clients = this.clients();
+      const changes = this._data.collect(this._lastUpdateSeq);
+      if (!changesetIsEmpty(changes)) {
+        for (const client of this._c.values()) {
+          client.t.send({
+            type: "serverUpdate",
+            seq: this._seq,
+            replyTo: client.pendingReplySeq,
+            clients: clients.filter((c) => c.id !== client.id),
+            changeset: changes,
+          });
+          client.pendingReplySeq = undefined;
+        }
+      }
+      this._lastUpdateSeq = this._seq;
+      this._onChange.forEach((cb) => cb());
+    }, 5);
   }
 }
